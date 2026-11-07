@@ -1,0 +1,51 @@
+{
+  "fake": true,
+  "label_rule": "plru",
+  "target": "sim_plru_W4",
+  "W": 4,
+  "seed": 1234,
+  "n_main": 60000,
+  "n_long": 5000,
+  "len_ranges": {
+    "main": [
+      0,
+      32
+    ],
+    "test_long": [
+      33,
+      128
+    ]
+  },
+  "counts": {
+    "test": 2660,
+    "test_long": 5000,
+    "train": 51683,
+    "val": 2683
+  },
+  "victim_distribution": {
+    "test": [
+      694,
+      640,
+      651,
+      675
+    ],
+    "test_long": [
+      1208,
+      1218,
+      1312,
+      1262
+    ],
+    "train": [
+      15278,
+      11493,
+      13312,
+      11600
+    ],
+    "val": [
+      632,
+      636,
+      784,
+      631
+    ]
+  }
+}

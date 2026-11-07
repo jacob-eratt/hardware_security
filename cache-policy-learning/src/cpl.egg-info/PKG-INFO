@@ -1,0 +1,13 @@
+Metadata-Version: 2.4
+Name: cpl
+Version: 0.1.0
+Summary: Learning cache replacement policies with neural sequence models
+Requires-Python: >=3.10
+Requires-Dist: torch>=2.0
+Requires-Dist: numpy
+Requires-Dist: pandas
+Requires-Dist: pyarrow
+Requires-Dist: pyyaml
+Requires-Dist: matplotlib
+Provides-Extra: test
+Requires-Dist: pytest; extra == "test"

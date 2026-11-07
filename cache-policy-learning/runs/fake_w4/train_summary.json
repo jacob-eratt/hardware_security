@@ -1,0 +1,32 @@
+{
+  "params": 165136,
+  "device": "cpu",
+  "steps": 353,
+  "epochs_run": 5,
+  "samples_seen": 179984,
+  "train_time_s": 39.85,
+  "early_stopped": true,
+  "best_val_acc": 1.0,
+  "cost_to_val_acc": {
+    "0.99": {
+      "step": 151,
+      "samples_seen": 76618,
+      "elapsed_s": 13.25
+    },
+    "0.999": {
+      "step": 252,
+      "samples_seen": 128301,
+      "elapsed_s": 26.38
+    }
+  },
+  "best_val": {
+    "acc": 1.0,
+    "nll": 0.0032204847659275597,
+    "n": 2683
+  },
+  "best_test": {
+    "acc": 0.9992481203007518,
+    "nll": 0.0036534563939374194,
+    "n": 2660
+  }
+}
