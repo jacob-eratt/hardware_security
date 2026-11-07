@@ -1,0 +1,461 @@
+{
+  "generator": "cpl.data.generate",
+  "code_version": "0.1.0",
+  "code_hash": "69e13945540e",
+  "created_utc": "2026-11-07T02:53:33+00:00",
+  "seed": 1234,
+  "scale": 1.0,
+  "config": {
+    "seed": 1234,
+    "target": "sim_plru_W16",
+    "policy": "plru",
+    "W": 16,
+    "data": {
+      "out_dir": "data/processed/sim_plru_W16",
+      "sizes": {
+        "train": 1000000,
+        "val": 50000,
+        "test": 50000,
+        "test_long": 50000,
+        "test_xlong": 20000,
+        "test_diag": 20000
+      },
+      "len_ranges": {
+        "train": [
+          0,
+          32
+        ],
+        "test_long": [
+          33,
+          128
+        ],
+        "test_xlong": [
+          129,
+          512
+        ],
+        "test_diag": [
+          0,
+          32
+        ]
+      },
+      "diag_require": "any",
+      "diag_policies": [
+        "plru",
+        "lru"
+      ],
+      "compare_policies": [
+        "lru",
+        "fifo",
+        "srrip"
+      ]
+    },
+    "model": {
+      "d_emb": 32,
+      "hidden": 128,
+      "layers": 2,
+      "dropout": 0.0
+    },
+    "train": {
+      "batch_size": 512,
+      "lr": 0.001,
+      "weight_decay": 0.01,
+      "warmup_steps": 500,
+      "max_epochs": 20,
+      "grad_clip": 1.0,
+      "eval_every": 2000,
+      "curriculum": {
+        "start_len": 8,
+        "step": 8,
+        "max_len": 32
+      },
+      "early_stop_acc": 0.999
+    },
+    "noise": null
+  },
+  "W": 16,
+  "target": "sim_plru_W16",
+  "policy": "plru",
+  "n_samples": 1190000,
+  "counts_per_split": {
+    "train": 1000000,
+    "val": 50000,
+    "test": 50000,
+    "test_long": 50000,
+    "test_xlong": 20000,
+    "test_diag": 20000
+  },
+  "splits": {
+    "train": {
+      "requested": 1000000,
+      "generated": 1000000,
+      "candidates_drawn": 1122304,
+      "L_range": [
+        0,
+        32
+      ],
+      "gen_type": "random",
+      "seconds": 6.43,
+      "n": 1000000,
+      "n_unique_histories": 878109,
+      "hist_len": {
+        "min": 0,
+        "max": 32,
+        "mean": 16.01
+      },
+      "victim_counts": [
+        156055,
+        34706,
+        63923,
+        34847,
+        92876,
+        34950,
+        63887,
+        34333,
+        124762,
+        34688,
+        63366,
+        34782,
+        92855,
+        34977,
+        63956,
+        35037
+      ],
+      "victim_frac": [
+        0.1561,
+        0.0347,
+        0.0639,
+        0.0348,
+        0.0929,
+        0.035,
+        0.0639,
+        0.0343,
+        0.1248,
+        0.0347,
+        0.0634,
+        0.0348,
+        0.0929,
+        0.035,
+        0.064,
+        0.035
+      ],
+      "majority_class_acc": 0.1561,
+      "agreement_with_label": {
+        "plru": 1.0,
+        "lru": 0.232,
+        "fifo": 0.1561,
+        "srrip": 0.2308
+      }
+    },
+    "val": {
+      "requested": 50000,
+      "generated": 50000,
+      "candidates_drawn": 1040384,
+      "L_range": [
+        0,
+        32
+      ],
+      "gen_type": "random",
+      "seconds": 5.17,
+      "n": 50000,
+      "n_unique_histories": 45883,
+      "hist_len": {
+        "min": 2,
+        "max": 32,
+        "mean": 16.68
+      },
+      "victim_counts": [
+        6532,
+        1784,
+        3288,
+        1789,
+        5110,
+        1760,
+        3381,
+        1839,
+        5315,
+        1834,
+        3343,
+        1834,
+        5302,
+        1805,
+        3309,
+        1775
+      ],
+      "victim_frac": [
+        0.1306,
+        0.0357,
+        0.0658,
+        0.0358,
+        0.1022,
+        0.0352,
+        0.0676,
+        0.0368,
+        0.1063,
+        0.0367,
+        0.0669,
+        0.0367,
+        0.106,
+        0.0361,
+        0.0662,
+        0.0355
+      ],
+      "majority_class_acc": 0.1306,
+      "agreement_with_label": {
+        "plru": 1.0,
+        "lru": 0.2084,
+        "fifo": 0.1306,
+        "srrip": 0.2072
+      }
+    },
+    "test": {
+      "requested": 50000,
+      "generated": 50000,
+      "candidates_drawn": 1040384,
+      "L_range": [
+        0,
+        32
+      ],
+      "gen_type": "random",
+      "seconds": 5.07,
+      "n": 50000,
+      "n_unique_histories": 45778,
+      "hist_len": {
+        "min": 1,
+        "max": 32,
+        "mean": 16.71
+      },
+      "victim_counts": [
+        7290,
+        1783,
+        3221,
+        1758,
+        4663,
+        1783,
+        3366,
+        1851,
+        5509,
+        1810,
+        3268,
+        1872,
+        4819,
+        1803,
+        3395,
+        1809
+      ],
+      "victim_frac": [
+        0.1458,
+        0.0357,
+        0.0644,
+        0.0352,
+        0.0933,
+        0.0357,
+        0.0673,
+        0.037,
+        0.1102,
+        0.0362,
+        0.0654,
+        0.0374,
+        0.0964,
+        0.0361,
+        0.0679,
+        0.0362
+      ],
+      "majority_class_acc": 0.1458,
+      "agreement_with_label": {
+        "plru": 1.0,
+        "lru": 0.2242,
+        "fifo": 0.1458,
+        "srrip": 0.223
+      }
+    },
+    "test_long": {
+      "requested": 50000,
+      "generated": 50000,
+      "candidates_drawn": 57344,
+      "L_range": [
+        33,
+        128
+      ],
+      "gen_type": "random",
+      "seconds": 0.83,
+      "n": 50000,
+      "n_unique_histories": 50000,
+      "hist_len": {
+        "min": 33,
+        "max": 128,
+        "mean": 80.56
+      },
+      "victim_counts": [
+        3187,
+        3130,
+        3205,
+        3170,
+        3218,
+        3136,
+        3084,
+        3037,
+        3158,
+        3121,
+        3083,
+        3135,
+        3074,
+        3055,
+        3083,
+        3124
+      ],
+      "victim_frac": [
+        0.0637,
+        0.0626,
+        0.0641,
+        0.0634,
+        0.0644,
+        0.0627,
+        0.0617,
+        0.0607,
+        0.0632,
+        0.0624,
+        0.0617,
+        0.0627,
+        0.0615,
+        0.0611,
+        0.0617,
+        0.0625
+      ],
+      "majority_class_acc": 0.0644,
+      "agreement_with_label": {
+        "plru": 1.0,
+        "lru": 0.201,
+        "fifo": 0.0637,
+        "srrip": 0.094
+      }
+    },
+    "test_xlong": {
+      "requested": 20000,
+      "generated": 20000,
+      "candidates_drawn": 24576,
+      "L_range": [
+        129,
+        512
+      ],
+      "gen_type": "random",
+      "seconds": 1.23,
+      "n": 20000,
+      "n_unique_histories": 20000,
+      "hist_len": {
+        "min": 129,
+        "max": 512,
+        "mean": 320.65
+      },
+      "victim_counts": [
+        1260,
+        1217,
+        1261,
+        1292,
+        1269,
+        1262,
+        1240,
+        1253,
+        1226,
+        1265,
+        1229,
+        1271,
+        1232,
+        1234,
+        1239,
+        1250
+      ],
+      "victim_frac": [
+        0.063,
+        0.0609,
+        0.063,
+        0.0646,
+        0.0635,
+        0.0631,
+        0.062,
+        0.0626,
+        0.0613,
+        0.0633,
+        0.0614,
+        0.0635,
+        0.0616,
+        0.0617,
+        0.0619,
+        0.0625
+      ],
+      "majority_class_acc": 0.0646,
+      "agreement_with_label": {
+        "plru": 1.0,
+        "lru": 0.2007,
+        "fifo": 0.063,
+        "srrip": 0.063
+      }
+    },
+    "test_diag": {
+      "requested": 20000,
+      "generated": 20000,
+      "candidates_drawn": 32768,
+      "L_range": [
+        0,
+        32
+      ],
+      "gen_type": "diagnostic",
+      "seconds": 0.2,
+      "n": 20000,
+      "n_unique_histories": 20000,
+      "hist_len": {
+        "min": 4,
+        "max": 32,
+        "mean": 18.14
+      },
+      "victim_counts": [
+        434,
+        418,
+        1178,
+        684,
+        2055,
+        844,
+        1561,
+        879,
+        2341,
+        892,
+        1702,
+        939,
+        2366,
+        976,
+        1773,
+        958
+      ],
+      "victim_frac": [
+        0.0217,
+        0.0209,
+        0.0589,
+        0.0342,
+        0.1027,
+        0.0422,
+        0.078,
+        0.044,
+        0.1171,
+        0.0446,
+        0.0851,
+        0.0469,
+        0.1183,
+        0.0488,
+        0.0887,
+        0.0479
+      ],
+      "majority_class_acc": 0.1183,
+      "agreement_with_label": {
+        "plru": 1.0,
+        "lru": 0.0,
+        "fifo": 0.0217,
+        "srrip": 0.0005
+      }
+    }
+  },
+  "timing_seconds": {
+    "histories": 18.93,
+    "simulation": 4.1,
+    "total": 32.5
+  },
+  "histories_parquet_rows": 1059770
+}
