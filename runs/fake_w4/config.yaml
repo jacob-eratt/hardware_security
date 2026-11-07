@@ -1,0 +1,58 @@
+seed: 1234
+target: sim_plru_W4
+policy: plru
+W: 4
+data:
+  out_dir: data/processed/sim_plru_W4
+  sizes:
+    train: 200000
+    val: 50000
+    test: 50000
+    test_long: 50000
+    test_xlong: 20000
+    test_diag: 20000
+  len_ranges:
+    train:
+    - 0
+    - 32
+    test_long:
+    - 33
+    - 128
+    test_xlong:
+    - 129
+    - 512
+    test_diag:
+    - 0
+    - 32
+  diag_require: any
+  compare_policies:
+  - lru
+  - fifo
+  - srrip
+model:
+  d_emb: 32
+  hidden: 128
+  layers: 2
+  dropout: 0.0
+train:
+  batch_size: 512
+  lr: 0.001
+  betas:
+  - 0.9
+  - 0.999
+  weight_decay: 0.01
+  warmup_steps: 500
+  min_lr: 1.0e-05
+  max_epochs: 6
+  max_steps: null
+  grad_clip: 1.0
+  eval_every: 500
+  curriculum:
+    start_len: 8
+    step: 8
+    max_len: 32
+  early_stop_acc: 0.999
+  early_stop_patience: 2
+  device: auto
+noise: null
+data_dir: data/fake/sim_plru_W4

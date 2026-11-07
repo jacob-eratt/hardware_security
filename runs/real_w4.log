@@ -1,0 +1,6 @@
+[train] device=cpu params=165,136 train=200,000 val=50,000 total_steps=7,208 run_dir=runs\real_w4
+[eval] step=    85 ep= 0 len<=8 loss=0.9551 val_acc=0.76372 val_nll=0.6456 lr=1.72e-04 t=12s
+[eval] step=   272 ep= 1 len<=16 loss=0.0962 val_acc=0.99754 val_nll=0.0126 lr=5.46e-04 t=42s
+[eval] step=   561 ep= 2 len<=24 loss=0.0025 val_acc=1.00000 val_nll=0.0003 lr=1.00e-03 t=99s
+[eval] step=   952 ep= 3 len<=32 loss=0.0002 val_acc=1.00000 val_nll=0.0001 lr=9.89e-04 t=196s
+[done] steps=952 time=196s best_val_acc=1.00000 test_acc=1.00000
