@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from .base import LinearFillPolicy, ReplacementPolicy, run_experiment
+from .base import LinearFillPolicy, ReplacementPolicy, run_experiment, run_miss_experiment
 from .brrip import BRRIP
+from .drrip import DRRIP, DRRIP_MODES
 from .fifo import FIFO
 from .lru import LRU
 from .oracle import lru_victim_from_recency, plru_victim_from_recency
@@ -32,6 +33,8 @@ def make_policy(name: str, W: int, seed: int | None = 0) -> LinearFillPolicy:
 
 __all__ = [
     "BRRIP",
+    "DRRIP",
+    "DRRIP_MODES",
     "FIFO",
     "LRU",
     "POLICIES",
@@ -43,4 +46,5 @@ __all__ = [
     "make_policy",
     "plru_victim_from_recency",
     "run_experiment",
+    "run_miss_experiment",
 ]

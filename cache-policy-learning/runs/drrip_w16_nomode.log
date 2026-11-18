@@ -1,0 +1,4 @@
+[train] device=cpu params=165,136 train=1,000,000 val=50,000 total_steps=16,702 run_dir=runs\drrip_w16_nomode
+[eval] step=   535 ep= 0 len<=8 loss=0.8291 val_acc=0.35838 val_nll=2.4683 lr=1.00e-03 t=161s
+[eval] step=  1543 ep= 1 len<=16 loss=0.7865 val_acc=0.52682 val_nll=1.4359 lr=9.90e-04 t=573s
+[eval] step=  2000 ep= 2 len<=24 loss=0.9112 val_acc=0.57252 val_nll=1.1696 lr=9.79e-04 t=808s

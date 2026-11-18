@@ -1,0 +1,33 @@
+seed: 1234
+target: sim_drrip_W16
+policy: drrip
+W: 16
+data:
+  out_dir: data/processed/sim_drrip_W16
+  # Each history is drawn from blocks b0..b(P-1), P ~ U[16, 24]: P = 16 is hits-only,
+  # larger P adds misses. Every history is labelled under both forced modes.
+  pool_range: [16, 24]
+  repeats: 16                  # BRRIP is stochastic: R simulations per history -> soft labels
+  sizes: {train: 500000, val: 25000, test: 25000, test_long: 25000, test_xlong: 10000}   # histories (x2 rows)
+  len_ranges: {train: [0, 32], test_long: [33, 128], test_xlong: [129, 512]}
+model:
+  d_emb: 32
+  hidden: 128
+  layers: 2
+  dropout: 0.0
+train:
+  use_mode_token: true         # prepend the forced-mode token after FILL (spec §8.4 policy tokens)
+  batch_size: 512
+  lr: 1.0e-3
+  betas: [0.9, 0.999]
+  weight_decay: 0.01
+  warmup_steps: 500
+  min_lr: 1.0e-5
+  max_epochs: 10
+  grad_clip: 1.0
+  eval_every: 2000
+  curriculum: {start_len: 8, step: 8, max_len: 32}
+  early_stop_acc: 0.999
+  early_stop_patience: 2
+  device: auto
+noise: null

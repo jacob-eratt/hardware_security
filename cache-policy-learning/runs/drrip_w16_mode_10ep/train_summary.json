@@ -1,0 +1,24 @@
+{
+  "params": 165136,
+  "device": "cpu",
+  "steps": 16702,
+  "epochs_run": 10,
+  "samples_seen": 8547638,
+  "train_time_s": 31326.46,
+  "early_stopped": false,
+  "best_val_acc": 0.9608,
+  "cost_to_val_acc": {
+    "0.99": null,
+    "0.999": null
+  },
+  "best_val": {
+    "acc": 0.9608,
+    "nll": 0.2827413592529297,
+    "n": 50000
+  },
+  "best_test": {
+    "acc": 0.96122,
+    "nll": 0.27702523345947266,
+    "n": 50000
+  }
+}

@@ -61,15 +61,31 @@ def _ids_for(W: int, hist: np.ndarray, lens: np.ndarray) -> list[str]:
     ]
 
 
+MAX_BLOCK_ID = 32  # block tokens b0..b31 (spec §6.1)
+
+
 def draw_random(
-    W: int, n: int, L_range: Sequence[int], rng: np.random.Generator
+    W: int, n: int, L_range: Sequence[int], rng: np.random.Generator,
+    pool_range: Sequence[int] | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Draw n histories: L ~ U[lo, hi], each element ~ U[0, W). Returns (padded, lens)."""
+    """Draw n histories: L ~ U[lo, hi], each element ~ U[0, W). Returns (padded, lens).
+
+    With ``pool_range = (a, b)`` each history first draws a pool size P ~ U[a, b] and its
+    elements are ~ U[0, P), so pools larger than W add accesses that miss (phase-2
+    histories). ``pool_range = None`` keeps the phase-1 behaviour and RNG stream.
+    """
     lo, hi = int(L_range[0]), int(L_range[1])
     if not 0 <= lo <= hi:
         raise ValueError(f"bad L_range {L_range}")
     lens = rng.integers(lo, hi + 1, size=n)
-    hist = rng.integers(0, W, size=(n, hi), dtype=np.int8)
+    if pool_range is None:
+        hist = rng.integers(0, W, size=(n, hi), dtype=np.int8)
+    else:
+        a, b = int(pool_range[0]), int(pool_range[1])
+        if not 1 <= a <= b <= MAX_BLOCK_ID:
+            raise ValueError(f"bad pool_range {pool_range}; need 1 <= a <= b <= {MAX_BLOCK_ID}")
+        pools = rng.integers(a, b + 1, size=n)
+        hist = (rng.random((n, hi)) * pools[:, None]).astype(np.int8)
     hist[np.arange(hi)[None, :] >= lens[:, None]] = PAD
     return hist, lens.astype(np.int16)
 
@@ -89,6 +105,7 @@ def collect(
     gen_type: str = "random",
     batch_size: int = 8_192,
     max_draws: int | None = None,
+    pool_range: Sequence[int] | None = None,
 ) -> tuple[HistoryBatch, int]:
     """Draw random candidates until n histories are accepted.
 
@@ -112,7 +129,7 @@ def collect(
     drawn = 0
     while len(ids_out) < n and drawn < max_draws:
         m = min(batch_size, max_draws - drawn)
-        hist, lens = draw_random(W, m, L_range, rng)
+        hist, lens = draw_random(W, m, L_range, rng, pool_range)
         drawn += m
         if candidate_filter is not None:
             keep = candidate_filter(hist, lens)
@@ -154,15 +171,16 @@ def generate_random_split(
     L_range: Sequence[int],
     rng: np.random.Generator,
     exclude_ids: set[str] | frozenset[str] = frozenset(),
+    pool_range: Sequence[int] | None = None,
 ) -> tuple[HistoryBatch, int]:
-    """Random histories for one split.
+    """Random histories for one split (``pool_range``: see `draw_random`).
 
     For the hash splits (train/val/test) a candidate is kept only if its hash maps to
     `split`, so each split has its own RNG stream yet no history can be in two of them.
     Other splits (test_long, test_xlong, ...) keep any candidate not in `exclude_ids`.
     """
     accept = (lambda hid: split_of(hid) == split) if split in HASH_SPLITS else None
-    return collect(W, n, L_range, rng, accept_id=accept, exclude_ids=exclude_ids)
+    return collect(W, n, L_range, rng, accept_id=accept, exclude_ids=exclude_ids, pool_range=pool_range)
 
 
 def diagnostic_filter(policies: Sequence[str], W: int, require: str) -> CandidateFilter:

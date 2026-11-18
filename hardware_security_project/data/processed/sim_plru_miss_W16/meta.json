@@ -1,0 +1,249 @@
+{
+  "generator": "cpl.data.generate_plru_miss",
+  "code_version": "0.1.0",
+  "code_hash": "c17be395f5c4",
+  "created_utc": "2026-11-07T17:30:57+00:00",
+  "seed": 1234,
+  "scale": 1.0,
+  "config": {
+    "seed": 1234,
+    "target": "sim_plru_miss_W16",
+    "policy": "plru",
+    "W": 16,
+    "data": {
+      "out_dir": "data/processed/sim_plru_miss_W16",
+      "pool_range": [
+        16,
+        24
+      ],
+      "sizes": {
+        "train": 500000,
+        "val": 25000,
+        "test": 25000,
+        "test_long": 25000,
+        "test_xlong": 10000
+      },
+      "len_ranges": {
+        "train": [
+          0,
+          32
+        ],
+        "test_long": [
+          33,
+          128
+        ],
+        "test_xlong": [
+          129,
+          512
+        ]
+      }
+    },
+    "model": {
+      "d_emb": 32,
+      "hidden": 128,
+      "layers": 2,
+      "dropout": 0.0
+    },
+    "train": {
+      "batch_size": 512,
+      "lr": 0.001,
+      "betas": [
+        0.9,
+        0.999
+      ],
+      "weight_decay": 0.01,
+      "warmup_steps": 500,
+      "min_lr": 1e-05,
+      "max_epochs": 10,
+      "grad_clip": 1.0,
+      "eval_every": 2000,
+      "curriculum": {
+        "start_len": 8,
+        "step": 8,
+        "max_len": 32
+      },
+      "early_stop_acc": 0.999,
+      "early_stop_patience": 2,
+      "device": "auto"
+    },
+    "noise": null
+  },
+  "W": 16,
+  "target": "sim_plru_miss_W16",
+  "policy": "plru",
+  "histories_shared_with": "generate_drrip (same seed, pool_range, sizes and len_ranges)",
+  "label_space": "way index evicted by the trigger",
+  "n_samples": 585000,
+  "counts_per_split": {
+    "train": 500000,
+    "val": 25000,
+    "test": 25000,
+    "test_long": 25000,
+    "test_xlong": 10000
+  },
+  "splits": {
+    "train": {
+      "requested": 500000,
+      "generated": 500000,
+      "candidates_drawn": 557056,
+      "L_range": [
+        0,
+        32
+      ],
+      "seconds": 17.82,
+      "mean_misses_in_history": 2.976,
+      "frac_hits_only": 0.2781,
+      "victim_frac": [
+        0.1239,
+        0.0476,
+        0.0694,
+        0.0395,
+        0.0877,
+        0.0426,
+        0.0645,
+        0.0385,
+        0.1053,
+        0.0452,
+        0.0666,
+        0.039,
+        0.0855,
+        0.042,
+        0.0643,
+        0.0385
+      ],
+      "majority_class_acc": 0.1239,
+      "agreement_with_srrip_mode": 0.1658
+    },
+    "val": {
+      "requested": 25000,
+      "generated": 25000,
+      "candidates_drawn": 532480,
+      "L_range": [
+        0,
+        32
+      ],
+      "seconds": 17.3,
+      "mean_misses_in_history": 3.104,
+      "frac_hits_only": 0.2488,
+      "victim_frac": [
+        0.0982,
+        0.0504,
+        0.0706,
+        0.041,
+        0.093,
+        0.0459,
+        0.0667,
+        0.0403,
+        0.0847,
+        0.0465,
+        0.0723,
+        0.0395,
+        0.0966,
+        0.0452,
+        0.0701,
+        0.039
+      ],
+      "majority_class_acc": 0.0982,
+      "agreement_with_srrip_mode": 0.1406
+    },
+    "test": {
+      "requested": 25000,
+      "generated": 25000,
+      "candidates_drawn": 499712,
+      "L_range": [
+        0,
+        32
+      ],
+      "seconds": 21.1,
+      "mean_misses_in_history": 3.019,
+      "frac_hits_only": 0.2425,
+      "victim_frac": [
+        0.105,
+        0.0504,
+        0.0724,
+        0.0388,
+        0.082,
+        0.0422,
+        0.0651,
+        0.0402,
+        0.1236,
+        0.0456,
+        0.0685,
+        0.0406,
+        0.0817,
+        0.0432,
+        0.063,
+        0.0376
+      ],
+      "majority_class_acc": 0.1236,
+      "agreement_with_srrip_mode": 0.1471
+    },
+    "test_long": {
+      "requested": 25000,
+      "generated": 25000,
+      "candidates_drawn": 32768,
+      "L_range": [
+        33,
+        128
+      ],
+      "seconds": 3.8,
+      "mean_misses_in_history": 14.876,
+      "frac_hits_only": 0.1154,
+      "victim_frac": [
+        0.0631,
+        0.0605,
+        0.0607,
+        0.0614,
+        0.063,
+        0.0668,
+        0.0643,
+        0.0624,
+        0.0608,
+        0.0634,
+        0.0616,
+        0.0638,
+        0.0614,
+        0.0626,
+        0.0631,
+        0.0611
+      ],
+      "majority_class_acc": 0.0668,
+      "agreement_with_srrip_mode": 0.0758
+    },
+    "test_xlong": {
+      "requested": 10000,
+      "generated": 10000,
+      "candidates_drawn": 16384,
+      "L_range": [
+        129,
+        512
+      ],
+      "seconds": 5.42,
+      "mean_misses_in_history": 59.93,
+      "frac_hits_only": 0.1048,
+      "victim_frac": [
+        0.059,
+        0.0612,
+        0.0605,
+        0.0605,
+        0.0635,
+        0.0638,
+        0.06,
+        0.066,
+        0.0597,
+        0.0628,
+        0.0679,
+        0.0636,
+        0.0641,
+        0.0643,
+        0.0577,
+        0.0654
+      ],
+      "majority_class_acc": 0.0679,
+      "agreement_with_srrip_mode": 0.0625
+    }
+  },
+  "timing_seconds": {
+    "total": 94.07
+  }
+}

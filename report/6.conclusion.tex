@@ -1,0 +1,19 @@
+\section{Conclusion}
+Our initial results demonstrate that a GRU can successfully
+learn tree-PLRU replacement behavior from memory-access
+histories, achieving nearly perfect prediction accuracy
+across multiple cache associativities. This validates our
+simulation and machine-learning pipeline as a foundation
+for characterizing cache replacement policies. On histories
+with misses, accuracy decreased as misses increased for both
+DRRIP and PLRU, which identifies tracking blocks across
+misses as the main challenge.
+
+Moving forward, we plan to improve accuracy on histories
+with misses, evaluate the model on longer access histories, compare
+predictions against other replacement policies, and collect
+eviction measurements from the L2 cache of an Intel Celeron
+N3450. Ultimately,
+we aim to determine whether neural sequence models can
+reliably identify undocumented cache replacement behavior
+and support hardware security research.

@@ -133,3 +133,25 @@ def run_experiment(policy: ReplacementPolicy, history: list[int]) -> tuple[int, 
         f"trigger must replace exactly one block: before={before} after={after}"
     )
     return int(victim), snapshot
+
+
+def run_miss_experiment(policy: ReplacementPolicy, history: list[int], trigger: int | None = None) -> tuple[int, int]:
+    """reset -> fill b0..b(W-1) -> apply history -> access a non-resident trigger block.
+
+    Unlike `run_experiment`, history elements may be any non-negative block ID, so
+    accesses to blocks outside the set cause misses and evictions mid-history.
+    Returns (victim_way, evicted_block) for the trigger access.
+    """
+    W = policy.W
+    policy.reset()
+    for b in range(W):
+        assert policy.access(b) is None, f"fill of b{b} unexpectedly evicted a block"
+    for b in history:
+        policy.access(int(b))
+    before = policy.resident()
+    if trigger is None:
+        trigger = max([W, *map(int, history)]) + 1
+    assert trigger not in before, f"trigger b{trigger} is already resident"
+    evicted = policy.access(trigger)
+    assert evicted is not None and evicted in before
+    return before.index(evicted), int(evicted)

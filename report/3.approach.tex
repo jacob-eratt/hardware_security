@@ -1,0 +1,202 @@
+\section{Threat Model}
+\label{sec:threat}
+
+\subsection{Security Motivation}
+Cache side-channel attacks, such as Prime+Probe and
+Reload+ Refresh, rely on predicting or controlling cache
+evictions. Understanding the replacement policy allows
+attackers to construct reliable eviction sequences, while
+incorrect assumptions can reduce attack effectiveness.
+Our project investigates whether replacement behavior can
+be learned without knowledge of the underlying hardware
+implementation.
+
+\subsection{Reverse-Engineering Setting}
+We do not model an attacker. Instead, we reverse-engineer
+the replacement policy of processors we can run code on,
+with the access of an ordinary user. We know the cache
+geometry but not its replacement policy. We can generate
+memory-access sequences on our own memory and observe
+eviction outcomes through cache hits and misses. Our goal
+is to predict which cache line will be evicted based on
+the access history and to identify the closest known policy.
+
+\subsection{Simulation Assumptions}
+Our simulator models a single $W$-way cache set with $W+1$
+available memory blocks, or more when histories include
+misses. Each experiment starts from a known
+state, and eviction outcomes are observed without timing
+noise, prefetching, or interference from other processes.
+The simulation is therefore noise-free, and the full cache
+state, including which block occupies each way and the
+replacement bits or counters, is visible at every step.
+Synthetic noise may be introduced later to evaluate model
+robustness.
+
+\subsection{Scope and Limitations}
+Our simulation focuses on learning replacement behavior rather
+than performing actual attacks. Eviction-set construction,
+address mapping, cache-slice hashing, and hardware measurements
+are excluded from this simulation stage but may be addressed
+during later hardware experiments.
+
+
+\section{Our Approach}
+\label{sec:approach}
+
+\subsection{Cache Simulation and Data Generation}
+
+We train a GRU on sequences of memory accesses and their known eviction outcomes from cache simulations, allowing it to predict which cache line will be evicted for a new access sequence.
+
+Our initial experiments focus on tree-based pseudo-LRU
+(PLRU). We implemented a simulator for a single cache set
+with associativities of 4, 8, and 16 ways. Each experiment
+begins by filling the set with known blocks, followed by a
+random sequence of accesses to those blocks. An additional block is then
+accessed to force an eviction, which provides the training
+label.
+
+Each sample contains the access history, its length, and
+the evicted way. History accesses are drawn uniformly from
+the $W$ filled blocks, so every access is a hit and the
+victim depends only on the policy's state. We generated
+200,000 training samples for 4-way and 8-way caches and
+1 million for 16-way caches, which have more state to learn.
+Training histories contain between 0 and 32 accesses.
+
+Samples are assigned to training, validation, and test sets
+(90/5/5) by hashing the history, so no history appears in
+more than one set. We also generated three held-out test
+sets: histories of 33--128 and 129--512 accesses, to test
+whether the model generalizes beyond the training lengths,
+and 20,000 diagnostic histories where PLRU and LRU choose
+different victims, to confirm the model has not simply
+learned LRU. Figure~\ref{fig:sample} shows example inputs
+and outputs.
+
+\begin{figure}[htbp]
+\centering
+\footnotesize
+\begin{tabular}{@{}l@{}}
+\textbf{(a) Tree-PLRU} \\[2pt]
+Input: $\underbrace{\texttt{FILL b0 b1 b2 b3}}_{\mbox{\scriptsize fill the set}}
+\ \texttt{SEP}\
+\underbrace{\texttt{b3 b2 b3 b0 b3 b1 b1}}_{\mbox{\scriptsize history (all hits)}}
+\ \texttt{NEW}$ \\[14pt]
+Output: way 2 is evicted, giving the training label \\[2pt]
+\quad \begin{tabular}[t]{|c|c|c|c|}
+\hline
+way 0 & way 1 & way 2 & way 3 \\
+\hline
+0 & 0 & \textbf{1} & 0 \\
+\hline
+\end{tabular}
+\quad (1 marks the evicted way) \\[8pt]
+\textbf{(b) DRRIP} \\[2pt]
+Input: $\texttt{FILL}\
+\underbrace{\texttt{SRRIP}}_{\mbox{\scriptsize mode}}
+\ \texttt{b0 b1 b2 b3 SEP}\
+\underbrace{\texttt{b1 b4 b2}}_{\mbox{\scriptsize b4 misses}}
+\ \texttt{NEW}$ \\[14pt]
+Output: way 3 is evicted in 16 of 16 runs \\[4pt]
+Input: \texttt{FILL BRRIP b0 b1 b2 b3 SEP b1 b4 b2 NEW} \\[2pt]
+Output: way 0 (the new block b4) is evicted in most runs \\
+\end{tabular}
+\caption{Example model inputs and outputs for a 4-way set.
+\texttt{FILL} precedes the blocks that fill the set,
+\texttt{SEP} separates the fill from the access history,
+and \texttt{NEW} marks the access of a new block, where the
+model predicts which way is evicted. In (b), the same
+history evicts different ways depending on the mode token.}
+\label{fig:sample}
+\end{figure}
+
+\subsection{Neural Network Architecture and Training}
+
+We use a Gated Recurrent Unit (GRU) network to learn
+replacement behavior from memory-access sequences. Our
+model consists of a 32-dimensional embedding layer, a
+two-layer GRU with 128 hidden units, and a classification
+layer that predicts the eviction victim.
+
+We train the model by comparing its predictions to the correct eviction outcomes and adjusting it to improve accuracy. We gradually increase the length of the memory-access sequences during training and stop once the model consistently achieves 99.9\% accuracy on validation data. All initial experiments were conducted on a laptop CPU.
+
+\subsection{Extension to an Adaptive Policy}
+
+Intel LLCs are expected to use adaptive policies, so we
+also simulated a 16-way DRRIP cache set. DRRIP switches
+sets between two RRIP variants, SRRIP and BRRIP, which
+differ only in how new blocks are inserted. BRRIP is
+randomized, so each history was simulated 16 times and the
+model was trained on the resulting victim distribution.
+The global mode selection is not visible from one set, so
+we gave the model the active mode as an extra input token
+(Figure~\ref{fig:sample}b).
+With hits-only histories both modes chose the same victim
+97\% of the time, so these histories also access up to 8
+additional blocks, causing misses. We generated 500,000
+training histories, each labeled under both modes, and
+trained for ten epochs. To compare policies on identical
+inputs, we also labeled the same histories with tree-PLRU
+and trained the same model on them.
+
+\subsection{Hardware Characterization}
+
+After validating our approach in simulation, we plan to
+collect eviction measurements from a local Intel Celeron
+N3450 (Goldmont). It has no L3, so its L2 is the
+last-level cache.
+For a $W$-way cache set, we will select $W+1$ memory blocks
+mapping to the same set. We will fill the cache, execute
+a generated access history, and introduce an additional
+block to force an eviction. These $W+1$ blocks suffice for
+hits-only histories. Adaptive and counter-based policies
+require histories with misses, so for these the history
+will draw from up to $W+8$ same-set blocks, as in our DRRIP
+simulation, plus one new block for the final access.
+
+To identify the evicted block, we will replay the experiment
+and probe each block individually using cache hit/miss
+measurements. Replaying is necessary because each probe can
+modify the cache state. With hits-only histories, only the
+original $W$ blocks need to be probed. When histories include
+misses, blocks can also be evicted during the history, so we
+will probe every block both with and without the final
+access; the victim is the block that is resident before the
+final access but not after it.
+
+On hardware we observe which block was evicted, not which
+way it occupied. With hits-only histories the two are the
+same, because block $b_i$ stays in way $i$. With misses,
+blocks move between ways, so for these histories our labels
+will be the evicted block. We will start with hits-only
+histories, which are cheaper to measure, and add histories
+with a few misses only where candidate policies cannot
+otherwise be distinguished.
+
+Once validated on the Celeron, we plan to apply
+the same methodology to the L2 and, if time permits, the
+Last-Level Cache (LLC) of an LRC machine.
+
+\subsection{Replacement Policy Identification}
+
+We will fine-tune the GRU on hardware measurements so that
+it predicts the hardware's evictions, and check its accuracy
+on held-out histories and cache sets against how often
+repeated measurements agree. We will then compare the
+model's predicted victims against those of each known
+replacement-policy simulator. A policy matches if it agrees
+on at least 95\% of diagnostic histories and clearly more
+than every other candidate. We also generated diagnostic access
+histories where candidate policies predict different
+victims, allowing us to distinguish between policies
+that otherwise behave similarly.
+
+The trained model can be queried on any number of new
+histories at no hardware cost, so we can search for
+histories that separate the leading candidates and verify
+only those on hardware. It also smooths over measurement
+noise, and if no known policy matches, it still provides a
+working model of the unknown policy to analyze. We will
+also compare hardware measurements directly against each
+simulator, which does not depend on model accuracy.

@@ -1,0 +1,4 @@
+{"step": 529, "epoch": 0, "samples_seen": 270456, "elapsed_s": 87.3, "train_loss": 0.5904464290927501, "val_acc": 0.72338, "val_nll": 0.9767420861816406, "lr": 0.0009999983909999466, "curriculum_max_len": 8}
+{"step": 1534, "epoch": 1, "samples_seen": 784596, "elapsed_s": 303.8, "train_loss": 0.03739633205388045, "val_acc": 0.9955, "val_nll": 0.016670554065704345, "lr": 0.0009979558994922494, "curriculum_max_len": 16}
+{"step": 2000, "epoch": 2, "samples_seen": 1023188, "elapsed_s": 437.26, "train_loss": 0.002785939484239604, "val_acc": 0.99992, "val_nll": 0.0013474231052398682, "lr": 0.0009957015363230817, "curriculum_max_len": 24}
+{"step": 3014, "epoch": 2, "samples_seen": 1542098, "elapsed_s": 728.23, "train_loss": 0.00028397680681605225, "val_acc": 1.0, "val_nll": 0.00035340682327747344, "lr": 0.0009879573524555606, "curriculum_max_len": 24}

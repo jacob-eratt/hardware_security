@@ -1,0 +1,54 @@
+seed: 1234
+target: sim_drrip_W16
+policy: drrip
+W: 16
+data:
+  out_dir: data/processed/sim_drrip_W16
+  pool_range:
+  - 16
+  - 24
+  repeats: 16
+  sizes:
+    train: 500000
+    val: 25000
+    test: 25000
+    test_long: 25000
+    test_xlong: 10000
+  len_ranges:
+    train:
+    - 0
+    - 32
+    test_long:
+    - 33
+    - 128
+    test_xlong:
+    - 129
+    - 512
+model:
+  d_emb: 32
+  hidden: 128
+  layers: 2
+  dropout: 0.0
+train:
+  batch_size: 512
+  lr: 0.001
+  betas:
+  - 0.9
+  - 0.999
+  weight_decay: 0.01
+  warmup_steps: 500
+  min_lr: 1.0e-05
+  max_epochs: 10
+  max_steps: null
+  grad_clip: 1.0
+  eval_every: 2000
+  curriculum:
+    start_len: 8
+    step: 8
+    max_len: 32
+  early_stop_acc: 0.999
+  early_stop_patience: 2
+  device: auto
+  use_mode_token: false
+noise: null
+data_dir: ../hardware_security_project/data/processed/sim_drrip_W16

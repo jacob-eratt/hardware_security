@@ -17,15 +17,22 @@ from cpl.data.tokens import PAD, W_MAX, encode
 Batch = dict[str, torch.Tensor]
 
 
-def encode_padded(histories: Sequence[Sequence[int]], Ws: Sequence[int]) -> tuple[np.ndarray, np.ndarray]:
-    """Tokenize and right-pad many histories. Returns ``(tokens uint8 [N, T], new_pos int32 [N])``."""
+def encode_padded(
+    histories: Sequence[Sequence[int]], Ws: Sequence[int], modes: Sequence[str | None] | None = None
+) -> tuple[np.ndarray, np.ndarray]:
+    """Tokenize and right-pad many histories. Returns ``(tokens uint8 [N, T], new_pos int32 [N])``.
+
+    ``modes[i]`` (optional) inserts that policy/mode token after ``FILL``.
+    """
     lens = np.fromiter((len(h) for h in histories), dtype=np.int64, count=len(histories))
     Ws = np.asarray(Ws, dtype=np.int64)
-    new_pos = (Ws + lens + 2).astype(np.int32)
+    modes = list(modes) if modes is not None else [None] * len(histories)
+    has_mode = np.fromiter((m is not None for m in modes), dtype=np.int64, count=len(histories))
+    new_pos = (Ws + lens + 2 + has_mode).astype(np.int32)
     T = int(new_pos.max()) + 1 if len(new_pos) else 1
     tokens = np.full((len(histories), T), PAD, dtype=np.uint8)
-    for i, (h, w) in enumerate(zip(histories, Ws)):
-        seq = encode(h, int(w))
+    for i, (h, w, m) in enumerate(zip(histories, Ws, modes)):
+        seq = encode(h, int(w), m)
         tokens[i, : len(seq)] = seq
     return tokens, new_pos
 
@@ -53,7 +60,7 @@ class VictimDataset(Dataset):
     ``iter_batches`` slice the pre-tokenized arrays directly, which is much faster.
     """
 
-    def __init__(self, df: pd.DataFrame) -> None:
+    def __init__(self, df: pd.DataFrame, use_mode_token: bool = True) -> None:
         histories = [np.asarray(h, dtype=np.int64) for h in df["history"]]
         self.W = df["W"].to_numpy(dtype=np.int64)
         if (self.W > W_MAX).any():
@@ -65,7 +72,10 @@ class VictimDataset(Dataset):
             self.label = df["label_hard"].to_numpy(dtype=np.int64)
         else:
             self.label = self.victim_counts.argmax(-1).astype(np.int64)
-        self.tokens, self.new_pos = encode_padded(histories, self.W)
+        self.modes: list[str | None] = [None] * len(df)
+        if use_mode_token and "forced_mode" in df:
+            self.modes = [m if isinstance(m, str) else None for m in df["forced_mode"]]
+        self.tokens, self.new_pos = encode_padded(histories, self.W, self.modes)
 
     def __len__(self) -> int:
         return len(self.label)
@@ -112,12 +122,12 @@ def load_samples(data_dir: str | Path) -> pd.DataFrame:
     return pd.read_parquet(Path(data_dir) / "samples.parquet")
 
 
-def load_split(df: pd.DataFrame, split: str) -> VictimDataset:
+def load_split(df: pd.DataFrame, split: str, use_mode_token: bool = True) -> VictimDataset:
     """Build a ``VictimDataset`` for one split of a samples dataframe."""
     sub = df[df["split"] == split].reset_index(drop=True)
     if sub.empty:
         raise ValueError(f"split '{split}' is empty or missing")
-    return VictimDataset(sub)
+    return VictimDataset(sub, use_mode_token)
 
 
 def to_device(batch: Batch, device: torch.device) -> Batch:

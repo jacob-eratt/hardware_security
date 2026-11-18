@@ -39,6 +39,7 @@ TRAIN_DEFAULTS = {
     "early_stop_acc": 0.999,
     "early_stop_patience": 2,
     "device": "auto",
+    "use_mode_token": True,
 }
 COST_THRESHOLDS = (0.99, 0.999)
 
@@ -92,6 +93,8 @@ def load_config(path: str | Path, overrides: argparse.Namespace) -> dict:
         val = getattr(overrides, key, None)
         if val is not None:
             t[key] = val
+    if overrides.no_mode_token:
+        t["use_mode_token"] = False
     if overrides.no_curriculum:
         t["curriculum"] = None
     if overrides.seed is not None:
@@ -111,8 +114,9 @@ def train(cfg: dict, run_dir: Path) -> dict:
     run_dir.mkdir(parents=True, exist_ok=True)
     (run_dir / "config.yaml").write_text(yaml.safe_dump(cfg, sort_keys=False))
     df = load_samples(cfg["data_dir"])
-    train_ds, val_ds = load_split(df, "train"), load_split(df, "val")
-    test_ds = load_split(df, "test") if (df["split"] == "test").any() else None
+    um = bool(t["use_mode_token"])
+    train_ds, val_ds = load_split(df, "train", um), load_split(df, "val", um)
+    test_ds = load_split(df, "test", um) if (df["split"] == "test").any() else None
     del df
     model = build_model(cfg["model"]).to(device)
     n_params = count_parameters(model)
@@ -217,6 +221,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     ap.add_argument("--eval-every", dest="eval_every", type=int, default=None)
     ap.add_argument("--device", default=None)
     ap.add_argument("--no-curriculum", action="store_true")
+    ap.add_argument("--no-mode-token", action="store_true", help="ignore forced_mode (model must infer the mode)")
     args = ap.parse_args(argv)
     cfg = load_config(args.config, args)
     name = args.run_name or f"{cfg['target']}_{datetime.now():%Y%m%d_%H%M%S}"

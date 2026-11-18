@@ -1,0 +1,10 @@
+[train] device=cpu params=165,136 train=1,000,000 val=50,000 total_steps=6,932 run_dir=runs\drrip_w16_mode
+[eval] step=   535 ep= 0 len<=8 loss=0.7223 val_acc=0.48402 val_nll=2.4135 lr=1.00e-03 t=93s
+[eval] step=  1543 ep= 1 len<=16 loss=0.3887 val_acc=0.72410 val_nll=1.4300 lr=9.37e-04 t=324s
+[eval] step=  2000 ep= 2 len<=24 loss=0.4618 val_acc=0.79260 val_nll=0.7218 lr=8.73e-04 t=454s
+[eval] step=  3024 ep= 2 len<=24 loss=0.3205 val_acc=0.87356 val_nll=0.5589 lr=6.69e-04 t=732s
+[eval] step=  4000 ep= 3 len<=32 loss=0.4408 val_acc=0.91196 val_nll=0.4101 lr=4.37e-04 t=1094s
+[eval] step=  4978 ep= 3 len<=32 loss=0.3653 val_acc=0.92978 val_nll=0.3642 lr=2.19e-04 t=1424s
+[eval] step=  6000 ep= 4 len<=32 loss=0.3403 val_acc=0.93414 val_nll=0.3523 lr=6.04e-05 t=1783s
+[eval] step=  6932 ep= 4 len<=32 loss=0.3352 val_acc=0.93492 val_nll=0.3498 lr=1.00e-05 t=2106s
+[done] steps=6932 time=2106s best_val_acc=0.93492 test_acc=0.93686

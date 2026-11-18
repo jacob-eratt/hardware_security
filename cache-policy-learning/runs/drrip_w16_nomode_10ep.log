@@ -1,0 +1,20 @@
+[train] device=cpu params=165,136 train=1,000,000 val=50,000 total_steps=16,702 run_dir=runs\drrip_w16_nomode_10ep
+[eval] step=   535 ep= 0 len<=8 loss=0.8291 val_acc=0.35838 val_nll=2.4683 lr=1.00e-03 t=934s
+[eval] step=  1543 ep= 1 len<=16 loss=0.7865 val_acc=0.52682 val_nll=1.4359 lr=9.90e-04 t=1308s
+[eval] step=  2000 ep= 2 len<=24 loss=0.9112 val_acc=0.57252 val_nll=1.1696 lr=9.79e-04 t=1540s
+[eval] step=  3024 ep= 2 len<=24 loss=0.8070 val_acc=0.60352 val_nll=1.0349 lr=9.42e-04 t=2061s
+[eval] step=  4000 ep= 3 len<=32 loss=0.9071 val_acc=0.63310 val_nll=0.8745 lr=8.90e-04 t=2604s
+[eval] step=  4978 ep= 3 len<=32 loss=0.8178 val_acc=0.64140 val_nll=0.8121 lr=8.25e-04 t=3050s
+[eval] step=  6000 ep= 4 len<=32 loss=0.7691 val_acc=0.64466 val_nll=0.7896 lr=7.44e-04 t=3521s
+[eval] step=  6932 ep= 4 len<=32 loss=0.7570 val_acc=0.64676 val_nll=0.7767 lr=6.62e-04 t=3966s
+[eval] step=  8000 ep= 5 len<=32 loss=0.7437 val_acc=0.64682 val_nll=0.7687 lr=5.63e-04 t=26653s
+[eval] step=  8886 ep= 5 len<=32 loss=0.7389 val_acc=0.64788 val_nll=0.7638 lr=4.78e-04 t=27115s
+[eval] step= 10000 ep= 6 len<=32 loss=0.7301 val_acc=0.64786 val_nll=0.7572 lr=3.72e-04 t=27731s
+[eval] step= 10840 ep= 6 len<=32 loss=0.7271 val_acc=0.65026 val_nll=0.7533 lr=2.97e-04 t=28144s
+[eval] step= 12000 ep= 7 len<=32 loss=0.7216 val_acc=0.64936 val_nll=0.7486 lr=2.02e-04 t=28795s
+[eval] step= 12794 ep= 7 len<=32 loss=0.7186 val_acc=0.64970 val_nll=0.7469 lr=1.45e-04 t=29133s
+[eval] step= 14000 ep= 8 len<=32 loss=0.7143 val_acc=0.65064 val_nll=0.7450 lr=7.64e-05 t=29806s
+[eval] step= 14748 ep= 8 len<=32 loss=0.7156 val_acc=0.65036 val_nll=0.7441 lr=4.51e-05 t=30192s
+[eval] step= 16000 ep= 9 len<=32 loss=0.7120 val_acc=0.65006 val_nll=0.7436 lr=1.46e-05 t=30875s
+[eval] step= 16702 ep= 9 len<=32 loss=0.7118 val_acc=0.65022 val_nll=0.7434 lr=1.00e-05 t=31177s
+[done] steps=16702 time=31177s best_val_acc=0.65064 test_acc=0.64476
