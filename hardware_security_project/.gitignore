@@ -1,0 +1,3 @@
+**/_measure_tmp/
+measure/*.o
+measure/cacheprobe.exe
