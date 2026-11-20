@@ -27,7 +27,7 @@ data:
 
 hw:
   core: 0                  # pin to one (ideally otherwise-idle) logical core
-  repeats: 16              # trials per history -> victim_counts; raise if noisy
+  repeats: 64              # trials per history -> victim_counts; raise if noisy
   pool: 16                 # congruent addresses to find (>= W; >= max block id + 1)
   buf_mb: 256              # bigger buffer => easier to find a full eviction set
   cache_level: 2
