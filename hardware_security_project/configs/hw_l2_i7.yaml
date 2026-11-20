@@ -17,7 +17,8 @@ hw:
   buf_mb: 256              # large pages are dense, so 256 MB is plenty; smaller => alloc succeeds
                            # even when RAM is a bit fragmented (err 1450 => reboot or lower further)
   cache_level: 2
-  threshold: null          # auto-calibrate
+  threshold: 175           # manual: between L2-hit (~146-162) and L3 (~180+); auto picks the
+                           # DRAM boundary (~308) which can't see L2->L3 evictions. Try 165-220.
   min_detect: 0.6
   force: true              # proceed with best-effort pool (finder is harder here)
   run_id: i7_run0
