@@ -100,6 +100,7 @@ static int      g_verbose = 0;
 static double   g_min_detect = 0.60;  /* required victim-detection rate         */
 static int      g_force = 0;          /* accept best-effort pool below threshold */
 static int      g_sim = 0;            /* self-test: software tree-PLRU, no measure*/
+static int      g_miss = 0;           /* miss mode: report the trigger's evicted BLOCK id */
 static int      g_flush = 1;          /* flush the set at each trial start        */
 static int      g_l1_want = 0;        /* desired size of the L1-flush set          */
 
@@ -403,6 +404,36 @@ static int run_trial(char **blk, int W, int *hist, int L, char *trigger) {
     return -1;
 }
 
+/* ----- miss-mode trial (distinguishes LRU/SRRIP etc.) -------------------- */
+/* With misses in the history the resident set is no longer {b0..b(W-1)}, so a
+ * single probe can't isolate the trigger's victim (several blocks may already
+ * be gone). Instead we measure the trigger's evicted BLOCK directly: replay the
+ * sequence and probe one block in isolation (no probe-cascade), once WITHOUT the
+ * trigger and once WITH it. The victim is the block resident before the trigger
+ * but gone after. `blk` has `pool` blocks (b0..b(pool-1)); fill is still b0..b(W-1). */
+static int seq_resident(char **blk, int W, int pool, int *hist, int L,
+                        char *trigger, int use_trigger, char *probe) {
+    for (int i = 0; i < pool; i++) _mm_clflush(blk[i]);
+    _mm_clflush(trigger);
+    _mm_mfence();
+    for (int i = 0; i < W; i++) mem_load(blk[i]);          /* fill b0..b(W-1)  */
+    _mm_mfence();
+    for (int i = 0; i < L; i++) mem_load(blk[hist[i]]);    /* replay (may miss)*/
+    _mm_mfence();
+    if (use_trigger) { mem_load(trigger); _mm_mfence(); }
+    for (int i = 0; i < g_l1fill_n; i++) mem_load(g_l1fill[i]);
+    _mm_mfence();
+    return time_load(probe) <= g_thr;                      /* 1 = resident (fast) */
+}
+
+static int run_miss_trial(char **blk, int W, int pool, int *hist, int L, char *trigger) {
+    for (int c = 0; c < pool; c++) {
+        if (!seq_resident(blk, W, pool, hist, L, trigger, 0, blk[c])) continue; /* not resident pre-trigger */
+        if (!seq_resident(blk, W, pool, hist, L, trigger, 1, blk[c])) return c; /* evicted by the trigger   */
+    }
+    return -1;
+}
+
 /* ----- main -------------------------------------------------------------- */
 int main(int argc, char **argv) {
     int core = 0, W = 16, pool = 16, R = 16;
@@ -420,6 +451,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--min-detect")&& i+1 < argc) g_min_detect = atof(argv[++i]);
         else if (!strcmp(argv[i], "--force"))                   g_force = 1;
         else if (!strcmp(argv[i], "--sim"))                     g_sim = 1;
+        else if (!strcmp(argv[i], "--miss"))                    g_miss = 1;
         else if (!strcmp(argv[i], "--no-flush"))                g_flush = 0;
         else if (!strcmp(argv[i], "--in")        && i+1 < argc) in_path = argv[++i];
         else if (!strcmp(argv[i], "--out")       && i+1 < argc) out_path= argv[++i];
@@ -467,7 +499,8 @@ int main(int argc, char **argv) {
             if (hist[i] < 0 || hist[i] >= pool) hist[i] = 0;
         }
         for (int r = 0; r < R; r++) {
-            int v = run_trial(poolv, W, hist, L, trigger);
+            int v = g_miss ? run_miss_trial(poolv, W, pool, hist, L, trigger)
+                           : run_trial(poolv, W, hist, L, trigger);
             fprintf(fout, "%d%c", v, r + 1 < R ? ' ' : '\n');
         }
         if (g_verbose && (s % 2000 == 0))

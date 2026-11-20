@@ -1,0 +1,22 @@
+[train] device=cpu params=165,136 train=20,000 val=2,000 total_steps=742 run_dir=runs\hw_l2_celeron_W16
+[eval] step=    11 ep= 0 len<=8 loss=3.2636 val_acc=0.01500 val_nll=3.1510 lr=2.40e-05 t=3s
+[eval] step=    32 ep= 1 len<=16 loss=2.8192 val_acc=0.32100 val_nll=2.5142 lr=6.60e-05 t=10s
+[eval] step=    62 ep= 2 len<=24 loss=1.8916 val_acc=0.51700 val_nll=1.8472 lr=1.26e-04 t=23s
+[eval] step=   102 ep= 3 len<=32 loss=1.6756 val_acc=0.62400 val_nll=1.5019 lr=2.06e-04 t=43s
+[eval] step=   142 ep= 4 len<=32 loss=1.3675 val_acc=0.71300 val_nll=1.2706 lr=2.86e-04 t=63s
+[eval] step=   182 ep= 5 len<=32 loss=1.1625 val_acc=0.79300 val_nll=1.0722 lr=3.66e-04 t=82s
+[eval] step=   222 ep= 6 len<=32 loss=0.9902 val_acc=0.83850 val_nll=0.9261 lr=4.46e-04 t=100s
+[eval] step=   262 ep= 7 len<=32 loss=0.8825 val_acc=0.86550 val_nll=0.8325 lr=5.26e-04 t=119s
+[eval] step=   302 ep= 8 len<=32 loss=0.8087 val_acc=0.88600 val_nll=0.8089 lr=6.06e-04 t=138s
+[eval] step=   342 ep= 9 len<=32 loss=0.7578 val_acc=0.89200 val_nll=0.7576 lr=6.86e-04 t=156s
+[eval] step=   382 ep=10 len<=32 loss=0.7259 val_acc=0.87050 val_nll=0.7533 lr=7.66e-04 t=175s
+[eval] step=   422 ep=11 len<=32 loss=0.6824 val_acc=0.90600 val_nll=0.6832 lr=8.46e-04 t=193s
+[eval] step=   462 ep=12 len<=32 loss=0.6514 val_acc=0.90050 val_nll=0.6801 lr=9.26e-04 t=212s
+[eval] step=   502 ep=13 len<=32 loss=0.6254 val_acc=0.91400 val_nll=0.6226 lr=1.00e-03 t=231s
+[eval] step=   542 ep=14 len<=32 loss=0.6030 val_acc=0.91950 val_nll=0.6052 lr=9.28e-04 t=251s
+[eval] step=   582 ep=15 len<=32 loss=0.5817 val_acc=0.93850 val_nll=0.5831 lr=7.45e-04 t=269s
+[eval] step=   622 ep=16 len<=32 loss=0.5592 val_acc=0.93950 val_nll=0.5634 lr=4.99e-04 t=288s
+[eval] step=   662 ep=17 len<=32 loss=0.5391 val_acc=0.94450 val_nll=0.5576 lr=2.54e-04 t=309s
+[eval] step=   702 ep=18 len<=32 loss=0.5270 val_acc=0.94650 val_nll=0.5449 lr=7.53e-05 t=329s
+[eval] step=   742 ep=19 len<=32 loss=0.5209 val_acc=0.94500 val_nll=0.5426 lr=1.00e-05 t=349s
+[done] steps=742 time=349s best_val_acc=0.94650 test_acc=0.94200
