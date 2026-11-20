@@ -426,12 +426,26 @@ static int seq_resident(char **blk, int W, int pool, int *hist, int L,
     return time_load(probe) <= g_thr;                      /* 1 = resident (fast) */
 }
 
-static int run_miss_trial(char **blk, int W, int pool, int *hist, int L, char *trigger) {
+/* Denoised trigger victim over R repeats. The real cache is a few % non-
+ * deterministic, and the before/after residency come from separate executions,
+ * so instead of trusting one run we measure each block's residency R times in
+ * each condition and majority-vote it. The victim is the block that is resident
+ * in the majority of no-trigger runs but not in the majority of with-trigger
+ * runs. Returns the block id, -1 if none, -2 if ambiguous (>1 flips). */
+static int run_miss_victim(char **blk, int W, int pool, int *hist, int L, char *trigger, int R) {
+    static int res_no[1 << 10], res_yes[1 << 10];
+    for (int c = 0; c < pool; c++) res_no[c] = res_yes[c] = 0;
+    for (int r = 0; r < R; r++)
+        for (int c = 0; c < pool; c++) {
+            res_no[c]  += seq_resident(blk, W, pool, hist, L, trigger, 0, blk[c]);
+            res_yes[c] += seq_resident(blk, W, pool, hist, L, trigger, 1, blk[c]);
+        }
+    int victim = -1;
     for (int c = 0; c < pool; c++) {
-        if (!seq_resident(blk, W, pool, hist, L, trigger, 0, blk[c])) continue; /* not resident pre-trigger */
-        if (!seq_resident(blk, W, pool, hist, L, trigger, 1, blk[c])) return c; /* evicted by the trigger   */
+        int in_no = 2 * res_no[c] > R, in_yes = 2 * res_yes[c] > R;
+        if (in_no && !in_yes) victim = (victim == -1) ? c : -2;  /* resident before, gone after */
     }
-    return -1;
+    return victim;
 }
 
 /* ----- main -------------------------------------------------------------- */
@@ -498,10 +512,12 @@ int main(int argc, char **argv) {
             if (fscanf(fin, "%d", &hist[i]) != 1) { fprintf(stderr, "[err] bad hist\n"); return 1; }
             if (hist[i] < 0 || hist[i] >= pool) hist[i] = 0;
         }
-        for (int r = 0; r < R; r++) {
-            int v = g_miss ? run_miss_trial(poolv, W, pool, hist, L, trigger)
-                           : run_trial(poolv, W, hist, L, trigger);
-            fprintf(fout, "%d%c", v, r + 1 < R ? ' ' : '\n');
+        if (g_miss) {
+            /* one denoised victim per history (R repeats are folded in internally) */
+            fprintf(fout, "%d\n", run_miss_victim(poolv, W, pool, hist, L, trigger, R));
+        } else {
+            for (int r = 0; r < R; r++)
+                fprintf(fout, "%d%c", run_trial(poolv, W, hist, L, trigger), r + 1 < R ? ' ' : '\n');
         }
         if (g_verbose && (s % 2000 == 0))
             fprintf(stderr, "[run] %d/%d histories\n", s, N);

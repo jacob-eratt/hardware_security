@@ -28,7 +28,7 @@ import json
 import logging
 import subprocess
 import time
-from collections import Counter
+# (per-trial Counter no longer needed: victims are denoised in the engine)
 from pathlib import Path
 from typing import Any
 
@@ -89,24 +89,12 @@ def write_hist_file(path: Path, hists: list[list[int]]) -> None:
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def read_results(path: Path, n: int, R: int) -> np.ndarray:
-    rows = [ln.split() for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()]
-    if len(rows) != n:
-        raise RuntimeError(f"engine returned {len(rows)} rows, expected {n}")
-    out = np.full((n, R), -2, np.int64)  # -2 = missing, -1 = engine 'no victim'
-    for i, r in enumerate(rows):
-        v = [int(x) for x in r][:R]
-        out[i, : len(v)] = v
-    return out
-
-
-def modal_victim(trials: np.ndarray) -> tuple[int, float, int]:
-    """(modal block, consistency, n_valid) from one history's per-trial victims."""
-    valid = trials[trials >= 0]
-    if valid.size == 0:
-        return -1, 0.0, 0
-    block, count = Counter(valid.tolist()).most_common(1)[0]
-    return int(block), count / valid.size, int(valid.size)
+def read_victims(path: Path, n: int) -> np.ndarray:
+    """One denoised victim block per history (engine miss mode): -1 none, -2 ambiguous."""
+    vals = [int(ln.split()[0]) for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()]
+    if len(vals) != n:
+        raise RuntimeError(f"engine returned {len(vals)} rows, expected {n}")
+    return np.asarray(vals, np.int64)
 
 
 def run_engine(exe: Path, cfg: dict[str, Any], pool: int, hist_file: Path, res_file: Path,
@@ -151,15 +139,14 @@ def discriminate(cfg: dict[str, Any], pool: int, n_diag: int, len_range: tuple[i
     run_engine(exe, cfg, pool, hist_file, res_file, l1_fill)
 
     R = int(cfg["hw"].get("repeats", 16))
-    trials = read_results(res_file, len(hists), R)
+    victims = read_victims(res_file, len(hists))  # one denoised block per history
 
-    # tally, over confidently-labelled diagnostic histories, which policy the HW matched
+    # tally, over cleanly-labelled diagnostic histories, which policy the HW matched
     tallies = {p: 0 for p in CANDIDATE_POLICIES}
     hw_lru = hw_srrip = neither = used = undetected = 0
     rows = []
-    for h, pred, tr in zip(hists, preds, trials):
-        block, consist, nvalid = modal_victim(tr)
-        if block < 0 or consist < min_consistency:
+    for h, pred, block in zip(hists, preds, victims):
+        if block < 0:            # -1 none, -2 ambiguous (>1 block flipped)
             undetected += 1
             continue
         used += 1
@@ -170,8 +157,7 @@ def discriminate(cfg: dict[str, Any], pool: int, n_diag: int, len_range: tuple[i
         hw_srrip += pred["srrip"] == block
         if pred["lru"] != block and pred["srrip"] != block:
             neither += 1
-        rows.append({"hist_len": len(h), "hw_block": block, "consistency": round(consist, 3),
-                     "pred": pred})
+        rows.append({"hist_len": len(h), "hw_block": int(block), "pred": pred})
 
     denom = max(used, 1)
     report = {
@@ -180,7 +166,7 @@ def discriminate(cfg: dict[str, Any], pool: int, n_diag: int, len_range: tuple[i
         "W": W, "pool": pool, "repeats": R, "len_range": list(len_range),
         "n_diagnostic": len(hists),
         "n_used": used, "n_undetected_or_noisy": undetected,
-        "min_consistency": min_consistency,
+        "repeats_denoised": R,
         "agreement_on_diagnostic": {p: round(tallies[p] / denom, 4) for p in CANDIDATE_POLICIES},
         "hw_matches_lru": round(hw_lru / denom, 4),
         "hw_matches_srrip": round(hw_srrip / denom, 4),
