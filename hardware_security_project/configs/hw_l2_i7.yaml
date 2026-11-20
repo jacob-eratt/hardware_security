@@ -14,7 +14,8 @@ hw:
   core: 2                  # a logical core to pin to (try E-cores 12-19 if P-cores are noisy)
   repeats: 32
   pool: 24
-  buf_mb: 512              # bigger buffer: no huge pages on Windows, so congruent addrs are sparser
+  buf_mb: 256              # large pages are dense, so 256 MB is plenty; smaller => alloc succeeds
+                           # even when RAM is a bit fragmented (err 1450 => reboot or lower further)
   cache_level: 2
   threshold: null          # auto-calibrate
   min_detect: 0.6
