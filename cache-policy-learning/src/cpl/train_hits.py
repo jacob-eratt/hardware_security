@@ -96,6 +96,9 @@ def main(argv=None):
     ap.add_argument("--layers", type=int, default=2)
     ap.add_argument("--device", default="cpu")
     ap.add_argument("--seed", type=int, default=1234)
+    ap.add_argument("--eval-only", action="store_true",
+                    help="skip training; load a model and evaluate (e.g. clean model on noisy data)")
+    ap.add_argument("--load", default=None, help="checkpoint to evaluate (default: <run-dir>/best.pt)")
     args = ap.parse_args(argv)
 
     set_seed(args.seed)
@@ -115,24 +118,31 @@ def main(argv=None):
           f"train_access={int(train['M'].sum()):,} device={device}")
 
     best = {"acc": -1.0}
-    for ep in range(args.epochs):
-        for A, P, M in iterate(train, args.batch_size, True, rng):
-            A, P, M = A.to(device), P.to(device), M.to(device)
-            logits = model(A)
-            loss = (bce(logits, P) * M).sum() / M.sum().clamp_min(1)
-            opt.zero_grad(set_to_none=True); loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0); opt.step()
-        ev = evaluate(model, val, device) if val is not None else evaluate(model, train, device)
-        tag = "val" if val is not None else "train"
-        print(f"[ep {ep:>2}] loss={float(loss):.4f} {tag}_acc={ev['acc']:.4f} {tag}_logloss={ev['logloss']:.4f}")
-        if ev["acc"] > best["acc"]:
-            best = ev
-            torch.save({"model": model.state_dict(), "args": vars(args)}, run_dir / "best.pt")
+    if args.eval_only:
+        ckpt = args.load or (run_dir / "best.pt")
+        model.load_state_dict(torch.load(ckpt, map_location=device)["model"])
+        best = evaluate(model, val if val is not None else train, device)
+        print(f"[eval-only] loaded {ckpt}  val_acc={best['acc']:.4f} logloss={best['logloss']:.4f}")
+    else:
+        for ep in range(args.epochs):
+            for A, P, M in iterate(train, args.batch_size, True, rng):
+                A, P, M = A.to(device), P.to(device), M.to(device)
+                logits = model(A)
+                loss = (bce(logits, P) * M).sum() / M.sum().clamp_min(1)
+                opt.zero_grad(set_to_none=True); loss.backward()
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0); opt.step()
+            ev = evaluate(model, val, device) if val is not None else evaluate(model, train, device)
+            tag = "val" if val is not None else "train"
+            print(f"[ep {ep:>2}] loss={float(loss):.4f} {tag}_acc={ev['acc']:.4f} {tag}_logloss={ev['logloss']:.4f}")
+            if ev["acc"] > best["acc"]:
+                best = ev
+                torch.save({"model": model.state_dict(), "args": vars(args)}, run_dir / "best.pt")
 
     summary = {"params": n_params, "best_val": best,
                "base_rate_val": base_rate_baseline(train, val if val is not None else train)}
     if args.test_dir:
-        model.load_state_dict(torch.load(run_dir / "best.pt", map_location=device)["model"])
+        if not args.eval_only:
+            model.load_state_dict(torch.load(run_dir / "best.pt", map_location=device)["model"])
         test = load_streams(args.test_dir, None)   # whole fresh set
         te = evaluate(model, test, device)
         summary["independent_test"] = te
