@@ -64,8 +64,10 @@ MEASURE_DIR = Path(cpl.__file__).resolve().parents[2] / "measure"
 
 # --------------------------------------------------------------------- engine
 def ensure_engine() -> Path:
-    """Return the path to cacheprobe.exe, compiling it from .c if needed."""
-    exe = MEASURE_DIR / "cacheprobe.exe"
+    """Return the path to the compiled engine, building it from .c if needed."""
+    import platform
+
+    exe = MEASURE_DIR / ("cacheprobe.exe" if platform.system() == "Windows" else "cacheprobe")
     src = MEASURE_DIR / "cacheprobe.c"
     if exe.exists() and exe.stat().st_mtime >= src.stat().st_mtime:
         return exe
@@ -88,7 +90,8 @@ def _find_cc() -> str:
     for cand in (r"C:\msys64\ucrt64\bin\gcc.exe", r"C:\msys64\mingw64\bin\gcc.exe"):
         if Path(cand).exists():
             return cand
-    raise FileNotFoundError("no C compiler found (install MSYS2 gcc or set PATH)")
+    raise FileNotFoundError("no C compiler found (install gcc: Linux `apt install gcc`, "
+                            "or MSYS2 gcc on Windows)")
 
 
 # --------------------------------------------------------------------- histories

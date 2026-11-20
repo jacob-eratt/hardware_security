@@ -1,18 +1,19 @@
 # Hardware-measured dataset for the L2 cache of an Intel Celeron.
 #
-# The GEOMETRY below (W = associativity) must match the real part. Check it on
-# the target machine before a full run, e.g.:
-#   wmic cpu get Name
-#   Get-CimInstance Win32_CacheMemory | ? Level -eq 4 | fl InstalledSize,Associativity,LineSize
-# or CPUID leaf 0x4 (coreinfo / cpu-z). Modern Celerons built on Gracemont/
-# Tremont E-cores use a shared-per-module L2; older Core-based Celerons have a
-# per-core L2. In both cases the finder locates ONE set by timing, so you only
-# need W (number of ways) right. If W is not a power of two, PLRU is skipped
-# from the comparison table but measurement still works.
+# Tuned for the test machine: Celeron N3450 (Apollo Lake / Goldmont), Linux.
+#   - L2 is 16-way, 64 B lines  => W = 16 (below).
+#   - "L2: 2 MiB (2 instances)" => each L2 is SHARED by a 2-core module, so the
+#     module-sibling core pollutes the set you measure. Pin to one core (hw.core)
+#     and keep its sibling idle/offline. Find the sibling with:
+#         cat /sys/devices/system/cpu/cpu0/cache/index2/shared_cpu_list
+#     and offline it, e.g.:  echo 0 | sudo tee /sys/devices/system/cpu/cpu1/online
+# For a different part, confirm the L2 ways (lscpu, or CPUID leaf 4). The finder
+# locates ONE set by timing, so only W must be right; non-power-of-two W still
+# measures but drops PLRU from the comparison table.
 seed: 1234
 target: hw_l2_celeron_W16
 policy: unknown            # we are measuring it, not assuming it
-W: 16                      # <-- set to the Celeron L2 associativity
+W: 16                      # Celeron N3450 L2 is 16-way
 
 data:
   out_dir: data/processed/hw_l2_celeron_W16

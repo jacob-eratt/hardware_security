@@ -29,9 +29,11 @@
  *      access one more congruent "new" block to force an eviction, then probe
  *      b0..b(W-1) and report the way that became slow (the victim).
  *
- * Build (MSYS2 UCRT64 gcc, as detected on this machine):
- *   gcc -O2 -march=native -o cacheprobe.exe cacheprobe.c
+ * Build:
+ *   Linux   : gcc -O2 -march=native -o cacheprobe     cacheprobe.c
+ *   Windows : gcc -O2 -march=native -o cacheprobe.exe cacheprobe.c   (MSYS2 gcc)
  * The Python driver (cpl.data.hw_measure) builds it automatically if missing.
+ * On Linux, run the driver under sudo for SCHED_FIFO + huge pages (best timing).
  *
  * Protocol (kept dead simple so the Python side owns all the bookkeeping):
  *   argv: --core C --ways W --pool P --repeats R --buf-mb MB
@@ -44,7 +46,15 @@
  *   Calibration / eviction-set stats are printed to stderr.
  */
 
+#ifdef _WIN32
 #include <windows.h>
+#else
+#define _GNU_SOURCE
+#include <sched.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <sys/resource.h>
+#endif
 #include <x86intrin.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -102,18 +112,51 @@ static int      g_l1fill_n = 0;
 
 /* ----- affinity / priority ----------------------------------------------- */
 static void pin_and_boost(int core) {
+#ifdef _WIN32
     DWORD_PTR mask = (DWORD_PTR)1 << core;
     if (!SetThreadAffinityMask(GetCurrentThread(), mask))
         fprintf(stderr, "[warn] SetThreadAffinityMask(core=%d) failed\n", core);
     SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
     SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
     Sleep(1); /* let the scheduler settle on the pinned core */
+#else
+    cpu_set_t set;
+    CPU_ZERO(&set);
+    CPU_SET(core, &set);
+    if (sched_setaffinity(0, sizeof(set), &set) != 0)
+        fprintf(stderr, "[warn] sched_setaffinity(core=%d) failed\n", core);
+    struct sched_param sp;
+    sp.sched_priority = sched_get_priority_max(SCHED_FIFO);
+    if (sched_setscheduler(0, SCHED_FIFO, &sp) != 0) {
+        setpriority(PRIO_PROCESS, 0, -20);      /* best effort without root */
+        fprintf(stderr, "[warn] SCHED_FIFO denied (run with sudo for the most "
+                        "stable timing); falling back to nice -20\n");
+    }
+    usleep(1000); /* let the scheduler settle on the pinned core */
+#endif
 }
 
 /* ----- buffer ------------------------------------------------------------ */
 static int alloc_buffer(size_t bytes) {
+#ifdef _WIN32
     g_buf = (char *)VirtualAlloc(NULL, bytes, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
     if (!g_buf) { fprintf(stderr, "[err] VirtualAlloc(%zu) failed\n", bytes); return 0; }
+#else
+    /* Prefer 2 MiB huge pages: contiguous physical memory means candidates at
+     * the same page offset also share the higher set-index bits, so a full
+     * eviction set is much easier to find. Fall back to 4 KiB pages. */
+    void *p = mmap(NULL, bytes, PROT_READ | PROT_WRITE,
+                   MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
+    if (p == MAP_FAILED) {
+        p = mmap(NULL, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        if (p == MAP_FAILED) { fprintf(stderr, "[err] mmap(%zu) failed\n", bytes); return 0; }
+        fprintf(stderr, "[mem] 4 KiB pages (no huge pages; "
+                        "`sudo sysctl vm.nr_hugepages=256` makes the finder more reliable)\n");
+    } else {
+        fprintf(stderr, "[mem] 2 MiB huge pages\n");
+    }
+    g_buf = (char *)p;
+#endif
     g_bufsz = bytes;
     for (size_t i = 0; i < bytes; i += PAGE) g_buf[i] = (char)i; /* fault in */
     return 1;
@@ -417,6 +460,10 @@ int main(int argc, char **argv) {
 
     fclose(fin); fclose(fout);
     fprintf(stderr, "[done] wrote %d histories x %d repeats to %s\n", N, R, out_path);
+#ifdef _WIN32
     VirtualFree(g_buf, 0, MEM_RELEASE);
+#else
+    munmap(g_buf, g_bufsz);
+#endif
     return 0;
 }
