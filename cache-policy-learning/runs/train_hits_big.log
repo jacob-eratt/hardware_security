@@ -1,0 +1,13 @@
+[hit] params=618,785 train_streams=17,946 train_access=1,153,134 device=cpu
+c:\Users\henry\Documents\hardware_security\cache-policy-learning\src\cpl\train_hits.py:136: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\torch\csrc\autograd\generated\python_variable_methods.cpp:821.)
+  print(f"[ep {ep:>2}] loss={float(loss):.4f} {tag}_acc={ev['acc']:.4f} {tag}_logloss={ev['logloss']:.4f}")
+[ep  0] loss=0.6092 val_acc=0.6690 val_logloss=0.6096
+[ep  1] loss=0.4791 val_acc=0.7583 val_logloss=0.4760
+[ep  2] loss=0.2695 val_acc=0.8791 val_logloss=0.2725
+[ep  3] loss=0.1351 val_acc=0.9472 val_logloss=0.1378
+[ep  4] loss=0.1055 val_acc=0.9530 val_logloss=0.1217
+[ep  5] loss=0.1101 val_acc=0.9554 val_logloss=0.1143
+[ep  6] loss=0.1105 val_acc=0.9555 val_logloss=0.1114
+[ep  7] loss=0.0991 val_acc=0.9582 val_logloss=0.1060
+[ep  8] loss=0.0860 val_acc=0.9582 val_logloss=0.1048

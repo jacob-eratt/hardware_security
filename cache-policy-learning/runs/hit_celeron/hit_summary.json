@@ -11,13 +11,13 @@
     "logloss": 0.6884
   },
   "independent_test": {
-    "acc": 0.959800164460925,
-    "logloss": 0.1007914852471229,
+    "acc": 0.9596799218034847,
+    "logloss": 0.10075073706203551,
     "n_access": 257812
   },
   "base_rate_test": {
     "hit_rate": 0.5507,
-    "acc": 0.5474,
+    "acc": 0.5469,
     "logloss": 0.6883
   }
 }
