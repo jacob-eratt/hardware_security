@@ -140,10 +140,50 @@ static void pin_and_boost(int core) {
 }
 
 /* ----- buffer ------------------------------------------------------------ */
+#ifdef _WIN32
+/* Enable SeLockMemoryPrivilege so VirtualAlloc(MEM_LARGE_PAGES) can be used.
+ * Needs the account to hold "Lock pages in memory" (Local Security Policy) and
+ * the process to run elevated; returns 0 otherwise (caller falls back). */
+static int enable_lock_memory_privilege(void) {
+    HANDLE tok;
+    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &tok))
+        return 0;
+    TOKEN_PRIVILEGES tp;
+    tp.PrivilegeCount = 1;
+    tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+    int ok = LookupPrivilegeValue(NULL, SE_LOCK_MEMORY_NAME, &tp.Privileges[0].Luid)
+          && AdjustTokenPrivileges(tok, FALSE, &tp, sizeof(tp), NULL, NULL)
+          && GetLastError() == ERROR_SUCCESS;   /* not ERROR_NOT_ALL_ASSIGNED */
+    CloseHandle(tok);
+    return ok;
+}
+#endif
+
 static int alloc_buffer(size_t bytes) {
 #ifdef _WIN32
-    g_buf = (char *)VirtualAlloc(NULL, bytes, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-    if (!g_buf) { fprintf(stderr, "[err] VirtualAlloc(%zu) failed\n", bytes); return 0; }
+    /* Prefer 2 MiB large pages: contiguous physical memory lets candidates at the
+     * same page offset also share the higher L2 set-index bits, so the eviction-set
+     * finder works (impossible with scattered 4 KiB pages on a many-set L2). */
+    SIZE_T lp = GetLargePageMinimum();
+    if (lp && enable_lock_memory_privilege()) {
+        size_t rounded = ((bytes + lp - 1) / lp) * lp;
+        void *p = VirtualAlloc(NULL, rounded, MEM_COMMIT | MEM_RESERVE | MEM_LARGE_PAGES, PAGE_READWRITE);
+        if (p) {
+            g_buf = (char *)p; g_bufsz = rounded;
+            fprintf(stderr, "[mem] Windows large pages (%zu MiB page, %zu MiB buffer)\n",
+                    (size_t)lp >> 20, g_bufsz >> 20);
+        } else {
+            fprintf(stderr, "[mem] large-page alloc failed (err %lu; RAM may be fragmented, reboot/retry)\n",
+                    (unsigned long)GetLastError());
+        }
+    }
+    if (!g_buf) {
+        g_buf = (char *)VirtualAlloc(NULL, bytes, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+        if (!g_buf) { fprintf(stderr, "[err] VirtualAlloc(%zu) failed\n", bytes); return 0; }
+        g_bufsz = bytes;
+        fprintf(stderr, "[mem] 4 KiB pages (no large pages: grant 'Lock pages in memory' + run as "
+                        "Administrator for a reliable L2 finder)\n");
+    }
 #else
     /* Prefer 2 MiB huge pages: contiguous physical memory means candidates at
      * the same page offset also share the higher set-index bits, so a full
@@ -159,9 +199,9 @@ static int alloc_buffer(size_t bytes) {
         fprintf(stderr, "[mem] 2 MiB huge pages\n");
     }
     g_buf = (char *)p;
-#endif
     g_bufsz = bytes;
-    for (size_t i = 0; i < bytes; i += PAGE) g_buf[i] = (char)i; /* fault in */
+#endif
+    for (size_t i = 0; i < g_bufsz; i += PAGE) g_buf[i] = (char)i; /* fault in */
     return 1;
 }
 
