@@ -109,7 +109,8 @@ def modal_victim(trials: np.ndarray) -> tuple[int, float, int]:
     return int(block), count / valid.size, int(valid.size)
 
 
-def run_engine(exe: Path, cfg: dict[str, Any], pool: int, hist_file: Path, res_file: Path) -> None:
+def run_engine(exe: Path, cfg: dict[str, Any], pool: int, hist_file: Path, res_file: Path,
+               l1_fill: int = 16) -> None:
     hw = cfg["hw"]
     cmd = [
         str(exe), "--miss",
@@ -122,8 +123,10 @@ def run_engine(exe: Path, cfg: dict[str, Any], pool: int, hist_file: Path, res_f
     ]
     if hw.get("threshold"):
         cmd += ["--threshold", str(int(hw["threshold"]))]
-    if hw.get("l1_fill"):
-        cmd += ["--l1-fill", str(int(hw["l1_fill"]))]
+    # L1 draining is essential in miss mode: the trigger's victim may still be in
+    # L1, so without it the probe reads an L1 hit and the eviction is masked.
+    if l1_fill > 0:
+        cmd += ["--l1-fill", str(l1_fill)]
     if hw.get("min_detect") is not None:
         cmd += ["--min-detect", str(float(hw["min_detect"]))]
     if hw.get("force"):
@@ -133,7 +136,7 @@ def run_engine(exe: Path, cfg: dict[str, Any], pool: int, hist_file: Path, res_f
 
 
 def discriminate(cfg: dict[str, Any], pool: int, n_diag: int, len_range: tuple[int, int],
-                 out_dir: Path, min_consistency: float = 0.5) -> dict:
+                 out_dir: Path, min_consistency: float = 0.5, l1_fill: int = 16) -> dict:
     t0 = time.perf_counter()
     W = int(cfg["W"])
     if pool <= W:
@@ -145,7 +148,7 @@ def discriminate(cfg: dict[str, Any], pool: int, n_diag: int, len_range: tuple[i
     hists, preds = generate_diagnostic(n_diag, W, pool, len_range, rng)
     hist_file, res_file = out_dir / "hist.txt", out_dir / "res.txt"
     write_hist_file(hist_file, hists)
-    run_engine(exe, cfg, pool, hist_file, res_file)
+    run_engine(exe, cfg, pool, hist_file, res_file, l1_fill)
 
     R = int(cfg["hw"].get("repeats", 16))
     trials = read_results(res_file, len(hists), R)
@@ -208,11 +211,13 @@ def main(argv: list[str] | None = None) -> None:
                     help="longer histories => more misses => LRU/SRRIP diverge more")
     ap.add_argument("--min-consistency", type=float, default=0.5,
                     help="drop histories whose modal victim is below this repeat fraction")
+    ap.add_argument("--l1-fill", type=int, default=16,
+                    help="L1-drain addresses before probing (essential in miss mode; 0 disables)")
     ap.add_argument("--out", default="runs/hw_discriminate")
     args = ap.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%H:%M:%S")
     discriminate(load_config(args.config), args.pool, args.n_diag,
-                 (args.len_min, args.len_max), Path(args.out), args.min_consistency)
+                 (args.len_min, args.len_max), Path(args.out), args.min_consistency, args.l1_fill)
 
 
 if __name__ == "__main__":
