@@ -82,6 +82,22 @@ def generate_diagnostic(n: int, W: int, pool: int, len_range: tuple[int, int],
     return hists, preds
 
 
+def generate_control(n: int, W: int, pool: int, len_range: tuple[int, int],
+                     rng: np.random.Generator) -> tuple[list[list[int]], list[int]]:
+    """Hits-only control histories (block IDs in [0, W), so no misses) and their LRU
+    victim. Run through the SAME miss-path detector, these isolate measurement
+    soundness from policy identity: the main dataset already showed the L2 is LRU on
+    hits-only traffic, so the miss-path must reproduce LRU here (~0.95) if it works."""
+    lo, hi = len_range
+    hists, lru_v = [], []
+    for _ in range(n):
+        L = int(rng.integers(lo, hi + 1))
+        h = rng.integers(0, W, size=L).tolist()
+        hists.append(h)
+        lru_v.append(int(run_miss_experiment(make_policy("lru", W), h, trigger=pool)[1]))
+    return hists, lru_v
+
+
 def write_hist_file(path: Path, hists: list[list[int]]) -> None:
     lines = [str(len(hists))]
     for h in hists:
@@ -124,7 +140,7 @@ def run_engine(exe: Path, cfg: dict[str, Any], pool: int, hist_file: Path, res_f
 
 
 def discriminate(cfg: dict[str, Any], pool: int, n_diag: int, len_range: tuple[int, int],
-                 out_dir: Path, min_consistency: float = 0.5, l1_fill: int = 16) -> dict:
+                 out_dir: Path, n_control: int = 400, l1_fill: int = 16) -> dict:
     t0 = time.perf_counter()
     W = int(cfg["W"])
     if pool <= W:
@@ -133,19 +149,33 @@ def discriminate(cfg: dict[str, Any], pool: int, n_diag: int, len_range: tuple[i
     exe = ensure_engine()
     rng = np.random.default_rng(int(cfg.get("seed", 1234)))
 
-    hists, preds = generate_diagnostic(n_diag, W, pool, len_range, rng)
+    diag, preds = generate_diagnostic(n_diag, W, pool, len_range, rng)
+    ctrl, ctrl_lru = generate_control(n_control, W, pool, len_range, rng)
+    log.info("control: %d hits-only histories (measurement sanity check)", len(ctrl))
+
+    all_hists = ctrl + diag                       # one engine run; control first
     hist_file, res_file = out_dir / "hist.txt", out_dir / "res.txt"
-    write_hist_file(hist_file, hists)
+    write_hist_file(hist_file, all_hists)
     run_engine(exe, cfg, pool, hist_file, res_file, l1_fill)
 
     R = int(cfg["hw"].get("repeats", 16))
-    victims = read_victims(res_file, len(hists))  # one denoised block per history
+    vic = read_victims(res_file, len(all_hists))
+    ctrl_vic, diag_vic = vic[: len(ctrl)], vic[len(ctrl):]
 
-    # tally, over cleanly-labelled diagnostic histories, which policy the HW matched
+    # --- control: hits-only, HW vs trusted LRU (does the miss-path detector work?) ---
+    c_used = c_match = 0
+    for lv, block in zip(ctrl_lru, ctrl_vic):
+        if block < 0:
+            continue
+        c_used += 1
+        c_match += int(block == lv)
+    control_match = c_match / max(c_used, 1)
+
+    # --- diagnostic: which policy the HW follows where LRU != SRRIP ---
     tallies = {p: 0 for p in CANDIDATE_POLICIES}
     hw_lru = hw_srrip = neither = used = undetected = 0
     rows = []
-    for h, pred, block in zip(hists, preds, victims):
+    for h, pred, block in zip(diag, preds, diag_vic):
         if block < 0:            # -1 none, -2 ambiguous (>1 block flipped)
             undetected += 1
             continue
@@ -164,9 +194,10 @@ def discriminate(cfg: dict[str, Any], pool: int, n_diag: int, len_range: tuple[i
         "generator": "cpl.data.hw_discriminate",
         "created_utc": _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds"),
         "W": W, "pool": pool, "repeats": R, "len_range": list(len_range),
-        "n_diagnostic": len(hists),
+        "control": {"n": len(ctrl), "n_used": c_used,
+                    "hw_matches_lru": round(control_match, 4)},
+        "n_diagnostic": len(diag),
         "n_used": used, "n_undetected_or_noisy": undetected,
-        "repeats_denoised": R,
         "agreement_on_diagnostic": {p: round(tallies[p] / denom, 4) for p in CANDIDATE_POLICIES},
         "hw_matches_lru": round(hw_lru / denom, 4),
         "hw_matches_srrip": round(hw_srrip / denom, 4),
@@ -175,15 +206,22 @@ def discriminate(cfg: dict[str, Any], pool: int, n_diag: int, len_range: tuple[i
     }
     (out_dir / "report.json").write_text(json.dumps({**report, "samples": rows[:200]}, indent=2), encoding="utf-8")
 
-    log.info("=" * 60)
-    log.info("DIAGNOSTIC RESULT (histories where LRU != SRRIP)")
-    log.info("  used %d / %d (dropped %d noisy/undetected)", used, len(hists), undetected)
+    log.info("=" * 64)
+    log.info("CONTROL (hits-only; miss-path detector must reproduce LRU if sound)")
+    log.info("  HW matches LRU on %.1f%%  (%d/%d clean)   [sound if >~85%%]",
+             100 * control_match, c_match, c_used)
+    log.info("-" * 64)
+    log.info("DIAGNOSTIC (histories where LRU != SRRIP)")
+    log.info("  used %d / %d (dropped %d)", used, len(diag), undetected)
     for p in CANDIDATE_POLICIES:
-        log.info("  hardware matches %-6s on %5.1f%%", p, 100 * report["agreement_on_diagnostic"][p])
+        log.info("  HW matches %-6s on %5.1f%%", p, 100 * report["agreement_on_diagnostic"][p])
     log.info("  -> LRU %.1f%%  vs  SRRIP %.1f%%  (neither %.1f%%)",
              100 * report["hw_matches_lru"], 100 * report["hw_matches_srrip"],
              100 * report["hw_matches_neither"])
-    log.info("=" * 60)
+    log.info("=" * 64)
+    if control_match < 0.85:
+        log.warning("control LOW: the miss-path victim measurement is unreliable, so the "
+                    "diagnostic numbers are not trustworthy (not a policy finding).")
     return report
 
 
@@ -195,15 +233,15 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--len-min", type=int, default=16)
     ap.add_argument("--len-max", type=int, default=40,
                     help="longer histories => more misses => LRU/SRRIP diverge more")
-    ap.add_argument("--min-consistency", type=float, default=0.5,
-                    help="drop histories whose modal victim is below this repeat fraction")
+    ap.add_argument("--n-control", type=int, default=400,
+                    help="hits-only control histories (sanity check for the miss-path detector)")
     ap.add_argument("--l1-fill", type=int, default=16,
                     help="L1-drain addresses before probing (essential in miss mode; 0 disables)")
     ap.add_argument("--out", default="runs/hw_discriminate")
     args = ap.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%H:%M:%S")
     discriminate(load_config(args.config), args.pool, args.n_diag,
-                 (args.len_min, args.len_max), Path(args.out), args.min_consistency, args.l1_fill)
+                 (args.len_min, args.len_max), Path(args.out), args.n_control, args.l1_fill)
 
 
 if __name__ == "__main__":
