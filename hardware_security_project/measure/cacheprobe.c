@@ -101,6 +101,7 @@ static double   g_min_detect = 0.60;  /* required victim-detection rate         
 static int      g_force = 0;          /* accept best-effort pool below threshold */
 static int      g_sim = 0;            /* self-test: software tree-PLRU, no measure*/
 static int      g_miss = 0;           /* miss mode: report the trigger's evicted BLOCK id */
+static int      g_stream = 0;         /* stream mode: per-access hit/miss vector  */
 static int      g_flush = 1;          /* flush the set at each trial start        */
 static int      g_l1_want = 0;        /* desired size of the L1-flush set          */
 
@@ -404,6 +405,25 @@ static int run_trial(char **blk, int W, int *hist, int L, char *trigger) {
     return -1;
 }
 
+/* ----- stream mode: per-access hit/miss ---------------------------------- */
+/* Replay an access stream over the congruent set and time EVERY access:
+ * fast (<= threshold) = hit (resident in this core's L1/L2), slow = miss (went
+ * to DRAM; the N3450 has no L3). Each repeat starts from a flushed set, so the
+ * stream warms the set itself. Over R repeats we tally per-access hit counts;
+ * out[t] in [0, R]. This is the black-box target: given the access sequence,
+ * which accesses the real cache serves vs. misses. ``stream[t]`` indexes blk. */
+static void run_stream(char **blk, int pool, int *stream, int L, int R, int *out) {
+    for (int t = 0; t < L; t++) out[t] = 0;
+    for (int r = 0; r < R; r++) {
+        for (int c = 0; c < pool; c++) _mm_clflush(blk[c]);
+        _mm_mfence();
+        for (int t = 0; t < L; t++) {
+            if (time_load(blk[stream[t]]) <= g_thr) out[t]++;   /* hit */
+            _mm_lfence();
+        }
+    }
+}
+
 /* ----- miss-mode trial (distinguishes LRU/SRRIP etc.) -------------------- */
 /* With misses in the history the resident set is no longer {b0..b(W-1)}, so a
  * single probe can't isolate the trigger's victim (several blocks may already
@@ -466,6 +486,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--force"))                   g_force = 1;
         else if (!strcmp(argv[i], "--sim"))                     g_sim = 1;
         else if (!strcmp(argv[i], "--miss"))                    g_miss = 1;
+        else if (!strcmp(argv[i], "--stream"))                  g_stream = 1;
         else if (!strcmp(argv[i], "--no-flush"))                g_flush = 0;
         else if (!strcmp(argv[i], "--in")        && i+1 < argc) in_path = argv[++i];
         else if (!strcmp(argv[i], "--out")       && i+1 < argc) out_path= argv[++i];
@@ -512,7 +533,12 @@ int main(int argc, char **argv) {
             if (fscanf(fin, "%d", &hist[i]) != 1) { fprintf(stderr, "[err] bad hist\n"); return 1; }
             if (hist[i] < 0 || hist[i] >= pool) hist[i] = 0;
         }
-        if (g_miss) {
+        if (g_stream) {
+            /* per-access hit counts over R repeats (hit = fast/resident) */
+            static int hc[4096];
+            run_stream(poolv, pool, hist, L, R, hc);
+            for (int t = 0; t < L; t++) fprintf(fout, "%d%c", hc[t], t + 1 < L ? ' ' : '\n');
+        } else if (g_miss) {
             /* soft victim distribution over the pool blocks (counts out of R) */
             static int cnt[1 << 10];
             run_miss_counts(poolv, W, pool, hist, L, trigger, R, cnt);
