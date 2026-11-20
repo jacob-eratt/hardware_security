@@ -427,11 +427,13 @@ static int seq_resident(char **blk, int W, int pool, int *hist, int L,
 }
 
 /* Denoised trigger victim over R repeats. The real cache is a few % non-
- * deterministic, and the before/after residency come from separate executions,
- * so instead of trusting one run we measure each block's residency R times in
- * each condition and majority-vote it. The victim is the block that is resident
- * in the majority of no-trigger runs but not in the majority of with-trigger
- * runs. Returns the block id, -1 if none, -2 if ambiguous (>1 flips). */
+ * deterministic and before/after residency come from separate executions, so a
+ * strict "exactly one block flips resident->gone" rule is destroyed by a single
+ * noisy survivor. Instead we score each block by how much its residency DROPS
+ * when the trigger is added (res_no - res_yes) and take the argmax: the true
+ * victim drops by ~R, survivors by ~0, so a little noise can't overtake it. The
+ * victim is accepted only when its drop is clear (>= R/2) and clearly beats the
+ * runner-up; otherwise -1 (ambiguous / no clean eviction). */
 static int run_miss_victim(char **blk, int W, int pool, int *hist, int L, char *trigger, int R) {
     static int res_no[1 << 10], res_yes[1 << 10];
     for (int c = 0; c < pool; c++) res_no[c] = res_yes[c] = 0;
@@ -440,12 +442,15 @@ static int run_miss_victim(char **blk, int W, int pool, int *hist, int L, char *
             res_no[c]  += seq_resident(blk, W, pool, hist, L, trigger, 0, blk[c]);
             res_yes[c] += seq_resident(blk, W, pool, hist, L, trigger, 1, blk[c]);
         }
-    int victim = -1;
+    int best = -1, best_drop = -1, second_drop = -1;
     for (int c = 0; c < pool; c++) {
-        int in_no = 2 * res_no[c] > R, in_yes = 2 * res_yes[c] > R;
-        if (in_no && !in_yes) victim = (victim == -1) ? c : -2;  /* resident before, gone after */
+        int drop = res_no[c] - res_yes[c];   /* resident before, gone after => large */
+        if (drop > best_drop) { second_drop = best_drop; best_drop = drop; best = c; }
+        else if (drop > second_drop) { second_drop = drop; }
     }
-    return victim;
+    if (2 * best_drop < R) return -1;                 /* no clearly-evicted block   */
+    if (best_drop - second_drop < R / 4) return -1;   /* two blocks tie => ambiguous */
+    return best;
 }
 
 /* ----- main -------------------------------------------------------------- */
