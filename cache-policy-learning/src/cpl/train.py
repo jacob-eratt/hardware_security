@@ -75,7 +75,7 @@ def evaluate(model: VictimGRU, ds: VictimDataset, device: torch.device, batch_si
     correct, nll, n = 0, 0.0, 0
     for b in ds.iter_batches(batch_size):
         b = to_device(b, device)
-        logits = model(b["tokens"], b["new_pos"], b["W"])
+        logits = model(b["tokens"], b["new_pos"], b["victim_span"])
         correct += int((logits.argmax(-1) == b["label"]).sum())
         nll += float(soft_cross_entropy(logits, b["victim_counts"], reduction="sum"))
         n += len(b["label"])
@@ -166,7 +166,7 @@ def train(cfg: dict, run_dir: Path) -> dict:
         max_len = curriculum_len(epoch, t["curriculum"])
         for b in train_ds.iter_batches(bs, epoch_idx[epoch], shuffle=True, rng=rng):
             b = to_device(b, device)
-            loss = soft_cross_entropy(model(b["tokens"], b["new_pos"], b["W"]), b["victim_counts"])
+            loss = soft_cross_entropy(model(b["tokens"], b["new_pos"], b["victim_span"]), b["victim_counts"])
             opt.zero_grad(set_to_none=True)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), t["grad_clip"])

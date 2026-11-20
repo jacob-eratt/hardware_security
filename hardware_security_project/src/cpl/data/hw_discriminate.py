@@ -105,12 +105,27 @@ def write_hist_file(path: Path, hists: list[list[int]]) -> None:
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def read_victims(path: Path, n: int) -> np.ndarray:
-    """One denoised victim block per history (engine miss mode): -1 none, -2 ambiguous."""
-    vals = [int(ln.split()[0]) for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()]
-    if len(vals) != n:
-        raise RuntimeError(f"engine returned {len(vals)} rows, expected {n}")
-    return np.asarray(vals, np.int64)
+def read_counts(path: Path, n: int, pool: int) -> np.ndarray:
+    """Per-history soft victim counts (engine miss mode), shape (n, pool)."""
+    rows = [ln.split() for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()]
+    if len(rows) != n:
+        raise RuntimeError(f"engine returned {len(rows)} rows, expected {n}")
+    M = np.zeros((n, pool), np.int64)
+    for i, r in enumerate(rows):
+        v = [int(x) for x in r][:pool]
+        M[i, : len(v)] = v
+    return M
+
+
+def victim_from_counts(row: np.ndarray, R: int) -> int:
+    """Clean single victim from a soft count row: argmax drop, accepted only if it is
+    large (>= R/2) and clearly beats the runner-up; else -1 (ambiguous/nondeterministic)."""
+    order = np.argsort(row)[::-1]
+    best = int(row[order[0]])
+    second = int(row[order[1]]) if len(order) > 1 else 0
+    if 2 * best < R or best - second < R // 4:
+        return -1
+    return int(order[0])
 
 
 def run_engine(exe: Path, cfg: dict[str, Any], pool: int, hist_file: Path, res_file: Path,
@@ -159,7 +174,8 @@ def discriminate(cfg: dict[str, Any], pool: int, n_diag: int, len_range: tuple[i
     run_engine(exe, cfg, pool, hist_file, res_file, l1_fill)
 
     R = int(cfg["hw"].get("repeats", 16))
-    vic = read_victims(res_file, len(all_hists))
+    counts = read_counts(res_file, len(all_hists), pool)
+    vic = np.array([victim_from_counts(counts[i], R) for i in range(len(all_hists))], np.int64)
     ctrl_vic, diag_vic = vic[: len(ctrl)], vic[len(ctrl):]
 
     # --- control: hits-only, HW vs trusted LRU (does the miss-path detector work?) ---

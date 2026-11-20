@@ -7,11 +7,16 @@ from torch import nn
 from cpl.data.tokens import PAD, VOCAB_SIZE, W_MAX
 
 
-def way_mask(W: torch.Tensor | int, batch: int, device: torch.device) -> torch.Tensor:
-    """Boolean ``[batch, W_MAX]`` mask that is True for invalid ways (``way >= W``)."""
-    if not torch.is_tensor(W):
-        W = torch.full((batch,), int(W), device=device)
-    return torch.arange(W_MAX, device=device)[None, :] >= W.to(device).long()[:, None]
+def way_mask(bound: torch.Tensor | int, n_classes: int, batch: int, device: torch.device) -> torch.Tensor:
+    """Boolean ``[batch, n_classes]`` mask, True for invalid classes (``class >= bound``).
+
+    ``bound`` is the number of valid victim classes per sample: the associativity ``W``
+    for hits-only data (victim is one of the W ways), or the block-pool size for miss
+    data (victim can be any resident block). ``n_classes`` is the model's output width.
+    """
+    if not torch.is_tensor(bound):
+        bound = torch.full((batch,), int(bound), device=device)
+    return torch.arange(n_classes, device=device)[None, :] >= bound.to(device).long()[:, None]
 
 
 class VictimGRU(nn.Module):
@@ -38,10 +43,13 @@ class VictimGRU(nn.Module):
         idx = new_pos.long().view(-1, 1, 1).expand(-1, 1, out.size(-1))
         return out.gather(1, idx).squeeze(1)
 
-    def forward(self, tokens: torch.Tensor, new_pos: torch.Tensor, W: torch.Tensor | int) -> torch.Tensor:
-        """Return masked logits ``[B, W_MAX]``; entries for ways ``>= W`` are ``-inf``."""
+    def forward(self, tokens: torch.Tensor, new_pos: torch.Tensor, bound: torch.Tensor | int) -> torch.Tensor:
+        """Return masked logits ``[B, n_classes]``; entries for classes ``>= bound`` are ``-inf``.
+
+        ``bound`` is the per-sample victim span (``W`` for hits-only, pool size for misses).
+        """
         logits = self.head(self.norm(self.hidden_at_new(tokens, new_pos)))
-        return logits.masked_fill(way_mask(W, tokens.size(0), tokens.device), float("-inf"))
+        return logits.masked_fill(way_mask(bound, logits.size(-1), tokens.size(0), tokens.device), float("-inf"))
 
 
 def build_model(cfg: dict) -> VictimGRU:
@@ -51,6 +59,7 @@ def build_model(cfg: dict) -> VictimGRU:
         hidden=cfg.get("hidden", 128),
         layers=cfg.get("layers", 2),
         dropout=cfg.get("dropout", 0.0),
+        w_max=cfg.get("w_max", W_MAX),   # victim-class count; widen for miss data
     )
 
 

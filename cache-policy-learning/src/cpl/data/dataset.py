@@ -47,6 +47,7 @@ def collate(samples: Sequence[dict]) -> Batch:
         "tokens": torch.from_numpy(tokens.astype(np.int64)),
         "new_pos": torch.from_numpy(new_pos.astype(np.int64)),
         "W": torch.tensor(Ws, dtype=torch.long),
+        "victim_span": torch.tensor([int(s.get("victim_span", s["W"])) for s in samples], dtype=torch.long),
         "victim_counts": torch.from_numpy(counts),
         "label": torch.from_numpy(counts.argmax(-1).astype(np.int64)),
         "hist_len": torch.tensor([len(h) for h in histories], dtype=torch.long),
@@ -65,6 +66,9 @@ class VictimDataset(Dataset):
         self.W = df["W"].to_numpy(dtype=np.int64)
         if (self.W > W_MAX).any():
             raise ValueError(f"W > {W_MAX} not supported")
+        # victim span = number of valid victim classes: W for hits-only (victim is a
+        # way), or the block-pool size for miss data (victim can be any resident block).
+        self.span = df["victim_span"].to_numpy(dtype=np.int64) if "victim_span" in df else self.W
         self.histories = histories
         self.hist_len = np.fromiter((len(h) for h in histories), dtype=np.int64, count=len(histories))
         self.victim_counts = np.stack([np.asarray(v, dtype=np.float32) for v in df["victim_counts"]]) if len(df) else np.zeros((0, W_MAX), np.float32)
@@ -91,6 +95,7 @@ class VictimDataset(Dataset):
             "tokens": torch.from_numpy(self.tokens[idx, :T].astype(np.int64)),
             "new_pos": torch.from_numpy(new_pos.astype(np.int64)),
             "W": torch.from_numpy(self.W[idx]),
+            "victim_span": torch.from_numpy(self.span[idx]),
             "victim_counts": torch.from_numpy(self.victim_counts[idx]),
             "label": torch.from_numpy(self.label[idx]),
             "hist_len": torch.from_numpy(self.hist_len[idx]),
