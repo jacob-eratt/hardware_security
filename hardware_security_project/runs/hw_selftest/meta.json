@@ -1,0 +1,319 @@
+{
+  "generator": "cpl.data.hw_measure",
+  "code_version": "0.1.0",
+  "code_hash": "c4b4defeecc5",
+  "created_utc": "2026-11-20T01:18:55+00:00",
+  "seed": 1234,
+  "scale": 0.02,
+  "source": "hw",
+  "config": {
+    "seed": 1234,
+    "target": "hw_l2_celeron_W16",
+    "policy": "unknown",
+    "W": 16,
+    "data": {
+      "out_dir": "data/processed/hw_l2_celeron_W16",
+      "sizes": {
+        "train": 20000,
+        "val": 2000,
+        "test": 2000,
+        "test_long": 2000,
+        "test_xlong": 1000
+      },
+      "len_ranges": {
+        "train": [
+          0,
+          32
+        ],
+        "test_long": [
+          33,
+          128
+        ],
+        "test_xlong": [
+          129,
+          512
+        ]
+      },
+      "pool_range": null
+    },
+    "hw": {
+      "core": 0,
+      "repeats": 16,
+      "pool": 16,
+      "buf_mb": 256,
+      "cache_level": 2,
+      "threshold": null,
+      "l1_fill": 0,
+      "sim": true,
+      "min_detect": 0.6,
+      "force": false,
+      "run_id": "run0",
+      "verbose": true
+    },
+    "model": {
+      "d_emb": 32,
+      "hidden": 128,
+      "layers": 2,
+      "dropout": 0.0
+    },
+    "train": {
+      "batch_size": 512,
+      "lr": 0.001,
+      "weight_decay": 0.01,
+      "warmup_steps": 500,
+      "max_epochs": 20,
+      "grad_clip": 1.0,
+      "eval_every": 2000,
+      "curriculum": {
+        "start_len": 8,
+        "step": 8,
+        "max_len": 32
+      },
+      "early_stop_acc": 0.999
+    },
+    "noise": null
+  },
+  "W": 16,
+  "target": "hw_l2_celeron_W16",
+  "policy": "unknown",
+  "n_samples": 540,
+  "counts_per_split": {
+    "train": 400,
+    "val": 40,
+    "test": 40,
+    "test_long": 40,
+    "test_xlong": 20
+  },
+  "splits": {
+    "train": {
+      "requested": 400,
+      "generated": 400,
+      "candidates_drawn": 8192,
+      "L_range": [
+        0,
+        32
+      ],
+      "seconds": 0.23,
+      "n": 400,
+      "n_labeled": 400,
+      "frac_undetected": 0.0,
+      "mean_valid_repeats": 16.0,
+      "mean_label_consistency": 1.0,
+      "hist_len": {
+        "min": 0,
+        "max": 32,
+        "mean": 16.16
+      },
+      "victim_frac": [
+        0.155,
+        0.0375,
+        0.055,
+        0.05,
+        0.07,
+        0.0275,
+        0.0725,
+        0.03,
+        0.1125,
+        0.05,
+        0.075,
+        0.0325,
+        0.095,
+        0.045,
+        0.0675,
+        0.025
+      ],
+      "majority_class_acc": 0.155,
+      "agreement_with_label": {
+        "plru": 1.0,
+        "lru": 0.225,
+        "fifo": 0.155,
+        "srrip": 0.225
+      }
+    },
+    "val": {
+      "requested": 40,
+      "generated": 40,
+      "candidates_drawn": 8192,
+      "L_range": [
+        0,
+        32
+      ],
+      "seconds": 0.2,
+      "n": 40,
+      "n_labeled": 40,
+      "frac_undetected": 0.0,
+      "mean_valid_repeats": 16.0,
+      "mean_label_consistency": 1.0,
+      "hist_len": {
+        "min": 2,
+        "max": 32,
+        "mean": 15.35
+      },
+      "victim_frac": [
+        0.125,
+        0.05,
+        0.075,
+        0.05,
+        0.2,
+        0.0,
+        0.1,
+        0.0,
+        0.15,
+        0.05,
+        0.05,
+        0.05,
+        0.05,
+        0.025,
+        0.0,
+        0.025
+      ],
+      "majority_class_acc": 0.2,
+      "agreement_with_label": {
+        "plru": 1.0,
+        "lru": 0.2,
+        "fifo": 0.125,
+        "srrip": 0.2
+      }
+    },
+    "test": {
+      "requested": 40,
+      "generated": 40,
+      "candidates_drawn": 8192,
+      "L_range": [
+        0,
+        32
+      ],
+      "seconds": 0.2,
+      "n": 40,
+      "n_labeled": 40,
+      "frac_undetected": 0.0,
+      "mean_valid_repeats": 16.0,
+      "mean_label_consistency": 1.0,
+      "hist_len": {
+        "min": 3,
+        "max": 32,
+        "mean": 20.07
+      },
+      "victim_frac": [
+        0.125,
+        0.05,
+        0.1,
+        0.0,
+        0.075,
+        0.025,
+        0.15,
+        0.0,
+        0.025,
+        0.1,
+        0.025,
+        0.025,
+        0.075,
+        0.025,
+        0.05,
+        0.15
+      ],
+      "majority_class_acc": 0.15,
+      "agreement_with_label": {
+        "plru": 1.0,
+        "lru": 0.175,
+        "fifo": 0.125,
+        "srrip": 0.175
+      }
+    },
+    "test_long": {
+      "requested": 40,
+      "generated": 40,
+      "candidates_drawn": 8192,
+      "L_range": [
+        33,
+        128
+      ],
+      "seconds": 0.59,
+      "n": 40,
+      "n_labeled": 40,
+      "frac_undetected": 0.0,
+      "mean_valid_repeats": 16.0,
+      "mean_label_consistency": 1.0,
+      "hist_len": {
+        "min": 38,
+        "max": 128,
+        "mean": 87.6
+      },
+      "victim_frac": [
+        0.05,
+        0.025,
+        0.125,
+        0.025,
+        0.125,
+        0.025,
+        0.05,
+        0.05,
+        0.025,
+        0.075,
+        0.125,
+        0.025,
+        0.1,
+        0.1,
+        0.075,
+        0.0
+      ],
+      "majority_class_acc": 0.125,
+      "agreement_with_label": {
+        "plru": 1.0,
+        "lru": 0.2,
+        "fifo": 0.05,
+        "srrip": 0.1
+      }
+    },
+    "test_xlong": {
+      "requested": 20,
+      "generated": 20,
+      "candidates_drawn": 8192,
+      "L_range": [
+        129,
+        512
+      ],
+      "seconds": 1.99,
+      "n": 20,
+      "n_labeled": 20,
+      "frac_undetected": 0.0,
+      "mean_valid_repeats": 16.0,
+      "mean_label_consistency": 1.0,
+      "hist_len": {
+        "min": 138,
+        "max": 501,
+        "mean": 315.2
+      },
+      "victim_frac": [
+        0.1,
+        0.1,
+        0.1,
+        0.05,
+        0.2,
+        0.0,
+        0.1,
+        0.0,
+        0.0,
+        0.0,
+        0.1,
+        0.05,
+        0.1,
+        0.0,
+        0.05,
+        0.05
+      ],
+      "majority_class_acc": 0.2,
+      "agreement_with_label": {
+        "plru": 1.0,
+        "lru": 0.2,
+        "fifo": 0.1,
+        "srrip": 0.1
+      }
+    }
+  },
+  "timing_seconds": {
+    "histories": 3.21,
+    "measurement": 0.67,
+    "total": 9.21
+  }
+}

@@ -1,0 +1,319 @@
+{
+  "generator": "cpl.data.hw_measure",
+  "code_version": "0.1.0",
+  "code_hash": "98d16963eb05",
+  "created_utc": "2026-11-20T01:54:27+00:00",
+  "seed": 1234,
+  "scale": 0.005,
+  "source": "hw",
+  "config": {
+    "seed": 1234,
+    "target": "hw_l2_celeron_W16",
+    "policy": "unknown",
+    "W": 16,
+    "data": {
+      "out_dir": "data/processed/hw_l2_celeron_W16",
+      "sizes": {
+        "train": 20000,
+        "val": 2000,
+        "test": 2000,
+        "test_long": 2000,
+        "test_xlong": 1000
+      },
+      "len_ranges": {
+        "train": [
+          0,
+          32
+        ],
+        "test_long": [
+          33,
+          128
+        ],
+        "test_xlong": [
+          129,
+          512
+        ]
+      },
+      "pool_range": null
+    },
+    "hw": {
+      "core": 0,
+      "repeats": 16,
+      "pool": 16,
+      "buf_mb": 256,
+      "cache_level": 2,
+      "threshold": null,
+      "l1_fill": 0,
+      "min_detect": 0.6,
+      "force": false,
+      "sim": false,
+      "run_id": "run0",
+      "verbose": true
+    },
+    "model": {
+      "d_emb": 32,
+      "hidden": 128,
+      "layers": 2,
+      "dropout": 0.0
+    },
+    "train": {
+      "batch_size": 512,
+      "lr": 0.001,
+      "weight_decay": 0.01,
+      "warmup_steps": 500,
+      "max_epochs": 20,
+      "grad_clip": 1.0,
+      "eval_every": 2000,
+      "curriculum": {
+        "start_len": 8,
+        "step": 8,
+        "max_len": 32
+      },
+      "early_stop_acc": 0.999
+    },
+    "noise": null
+  },
+  "W": 16,
+  "target": "hw_l2_celeron_W16",
+  "policy": "unknown",
+  "n_samples": 135,
+  "counts_per_split": {
+    "train": 100,
+    "val": 10,
+    "test": 10,
+    "test_long": 10,
+    "test_xlong": 5
+  },
+  "splits": {
+    "train": {
+      "requested": 100,
+      "generated": 100,
+      "candidates_drawn": 8192,
+      "L_range": [
+        0,
+        32
+      ],
+      "seconds": 0.23,
+      "n": 100,
+      "n_labeled": 100,
+      "frac_undetected": 0.0,
+      "mean_valid_repeats": 15.93,
+      "mean_label_consistency": 0.8695,
+      "hist_len": {
+        "min": 0,
+        "max": 32,
+        "mean": 17.3
+      },
+      "victim_frac": [
+        0.37,
+        0.21,
+        0.08,
+        0.09,
+        0.04,
+        0.06,
+        0.02,
+        0.0,
+        0.02,
+        0.03,
+        0.02,
+        0.02,
+        0.01,
+        0.02,
+        0.01,
+        0.0
+      ],
+      "majority_class_acc": 0.37,
+      "agreement_with_label": {
+        "plru": 0.24,
+        "lru": 0.92,
+        "fifo": 0.37,
+        "srrip": 0.91
+      }
+    },
+    "val": {
+      "requested": 10,
+      "generated": 10,
+      "candidates_drawn": 8192,
+      "L_range": [
+        0,
+        32
+      ],
+      "seconds": 0.2,
+      "n": 10,
+      "n_labeled": 10,
+      "frac_undetected": 0.0,
+      "mean_valid_repeats": 15.8,
+      "mean_label_consistency": 0.925,
+      "hist_len": {
+        "min": 5,
+        "max": 23,
+        "mean": 13.3
+      },
+      "victim_frac": [
+        0.7,
+        0.0,
+        0.0,
+        0.1,
+        0.1,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.1,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "majority_class_acc": 0.7,
+      "agreement_with_label": {
+        "plru": 0.2,
+        "lru": 0.9,
+        "fifo": 0.7,
+        "srrip": 0.9
+      }
+    },
+    "test": {
+      "requested": 10,
+      "generated": 10,
+      "candidates_drawn": 8192,
+      "L_range": [
+        0,
+        32
+      ],
+      "seconds": 0.2,
+      "n": 10,
+      "n_labeled": 10,
+      "frac_undetected": 0.0,
+      "mean_valid_repeats": 16.0,
+      "mean_label_consistency": 0.8875,
+      "hist_len": {
+        "min": 15,
+        "max": 32,
+        "mean": 23.3
+      },
+      "victim_frac": [
+        0.2,
+        0.2,
+        0.3,
+        0.2,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.1,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "majority_class_acc": 0.3,
+      "agreement_with_label": {
+        "plru": 0.1,
+        "lru": 1.0,
+        "fifo": 0.2,
+        "srrip": 1.0
+      }
+    },
+    "test_long": {
+      "requested": 10,
+      "generated": 10,
+      "candidates_drawn": 8192,
+      "L_range": [
+        33,
+        128
+      ],
+      "seconds": 0.6,
+      "n": 10,
+      "n_labeled": 10,
+      "frac_undetected": 0.0,
+      "mean_valid_repeats": 16.0,
+      "mean_label_consistency": 0.6937,
+      "hist_len": {
+        "min": 50,
+        "max": 117,
+        "mean": 82.7
+      },
+      "victim_frac": [
+        0.1,
+        0.0,
+        0.1,
+        0.0,
+        0.2,
+        0.1,
+        0.1,
+        0.1,
+        0.0,
+        0.0,
+        0.1,
+        0.1,
+        0.1,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "majority_class_acc": 0.2,
+      "agreement_with_label": {
+        "plru": 0.3,
+        "lru": 0.5,
+        "fifo": 0.1,
+        "srrip": 0.2
+      }
+    },
+    "test_xlong": {
+      "requested": 5,
+      "generated": 5,
+      "candidates_drawn": 8192,
+      "L_range": [
+        129,
+        512
+      ],
+      "seconds": 2.0,
+      "n": 5,
+      "n_labeled": 5,
+      "frac_undetected": 0.0,
+      "mean_valid_repeats": 15.8,
+      "mean_label_consistency": 0.8342,
+      "hist_len": {
+        "min": 245,
+        "max": 459,
+        "mean": 357.6
+      },
+      "victim_frac": [
+        0.0,
+        0.0,
+        0.0,
+        0.2,
+        0.2,
+        0.0,
+        0.0,
+        0.0,
+        0.2,
+        0.2,
+        0.2,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "majority_class_acc": 0.2,
+      "agreement_with_label": {
+        "plru": 0.4,
+        "lru": 0.8,
+        "fifo": 0.0,
+        "srrip": 0.0
+      }
+    }
+  },
+  "timing_seconds": {
+    "histories": 3.23,
+    "measurement": 0.8,
+    "total": 8.86
+  }
+}
