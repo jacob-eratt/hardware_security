@@ -37,6 +37,10 @@ hw:
   min_detect: 0.6          # require this victim-detection rate when validating
                            # the eviction set; lower if the target is noisy
   force: false             # true => use best-effort set even below min_detect
+  sim: false               # true => software tree-PLRU oracle, NO hardware
+                           # measurement (self-test: a sim dataset must have
+                           # agreement_with_label.plru == 1.0). Set back to
+                           # false for real measurement.
   run_id: run0
   verbose: true
 

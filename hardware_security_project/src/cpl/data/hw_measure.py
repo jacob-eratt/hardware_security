@@ -177,6 +177,8 @@ def run_engine(exe: Path, cfg: dict[str, Any], batch: HistoryBatch, tmp: Path) -
         cmd += ["--min-detect", str(float(hw["min_detect"]))]
     if hw.get("force"):
         cmd += ["--force"]
+    if hw.get("flush") is False:        # flush is on by default in the engine
+        cmd += ["--no-flush"]
     if hw.get("sim"):
         cmd += ["--sim"]
     if hw.get("verbose"):

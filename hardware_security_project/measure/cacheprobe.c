@@ -85,13 +85,10 @@ static int cmp_u64(const void *a, const void *b) {
     uint64_t x = *(const uint64_t *)a, y = *(const uint64_t *)b;
     return (x > y) - (x < y);
 }
-static uint64_t median_u64(uint64_t *v, int n) {
-    qsort(v, n, sizeof(uint64_t), cmp_u64);
-    return v[n / 2];
-}
 static uint64_t pct_u64(uint64_t *v, int n, double p) { /* v must be sorted */
     int i = (int)(p * (n - 1) + 0.5);
-    if (i < 0) i = 0; if (i >= n) i = n - 1;
+    if (i < 0) i = 0;
+    if (i >= n) i = n - 1;
     return v[i];
 }
 
@@ -103,10 +100,14 @@ static int      g_verbose = 0;
 static double   g_min_detect = 0.60;  /* required victim-detection rate         */
 static int      g_force = 0;          /* accept best-effort pool below threshold */
 static int      g_sim = 0;            /* self-test: software tree-PLRU, no measure*/
+static int      g_flush = 1;          /* flush the set at each trial start        */
+static int      g_l1_want = 0;        /* desired size of the L1-flush set          */
 
-/* An L1 filler: accessing these between the trigger and the probe pushes the
- * target set's lines out of L1 (which is smaller/less-associative) so the
- * probe measures L2 residency rather than L1. Only used if --l1-fill > 0. */
+/* L1-flush set: addresses at the TARGET's page offset (so they land in the same
+ * L1 set as every block) but NOT congruent in L2 (different L2 set). Accessing
+ * them between the trigger and the probe evicts the blocks from the small L1
+ * without disturbing their L2 state, so the probe reads true L2 residency.
+ * Built in find_congruent_pool. Used only if --l1-fill > 0. */
 static char   **g_l1fill   = NULL;
 static int      g_l1fill_n = 0;
 
@@ -308,6 +309,19 @@ static int find_congruent_pool(char **out, int need, int W, size_t offset) {
             fprintf(stderr, "[evset] attempt %d: only %d/%d congruent; retrying\n", attempt + 1, k, need);
             continue;
         }
+        if (g_l1_want > 0) {   /* same L1 set as the blocks, but a different L2 set */
+            free(g_l1fill);
+            g_l1fill = malloc(sizeof(char *) * g_l1_want);
+            int m = 0;
+            for (int i = 0; i < cand_n && m < g_l1_want; i++) {
+                char *c = candidate((size_t)(i + 1), offset);
+                int inpool = 0;
+                for (int j = 0; j < k; j++) if (out[j] == c) { inpool = 1; break; }
+                if (!inpool && !evicts(C, es_n, c)) g_l1fill[m++] = c;
+            }
+            g_l1fill_n = m;
+            if (attempt == 0) fprintf(stderr, "[evset] L1-flush set: %d addresses\n", m);
+        }
         double det = validate_pool(out, W, out[W]);     /* use out[W] as a trigger */
         fprintf(stderr, "[evset] attempt %d: es=%d pool=%d victim-detect=%.2f\n",
                 attempt + 1, es_n, k, det);
@@ -359,32 +373,39 @@ static int plru_victim(int W, const int *hist, int L) {
 }
 
 /* ----- one measured trial ------------------------------------------------ */
-/* The victim is the block that reads slowest after the trigger (robust to a
- * lone noisy sample), provided it crosses the hit/miss threshold. Returns the
- * way index, or -1 if nothing was evicted. The set is re-filled from scratch
- * every trial, so state does not leak between trials. */
+/* One trial, mirroring the simulator's reset -> fill -> history -> trigger:
+ *   - flush the set first (g_flush) so each trial starts from an EMPTY set and
+ *     the fill deterministically loads b0..b(W-1); this is what makes repeats
+ *     of the same history agree. Safe on parts with no L3 (e.g. N3450): a flush
+ *     goes to DRAM and the refill is clean.
+ *   - after the trigger, drain L1 (g_l1fill) so the probe reads L2, not L1.
+ *   - the victim is the FIRST way over threshold: every way probed before it
+ *     was a hit (resident), so returning immediately avoids the reload of the
+ *     victim cascading into later ways.
+ * Returns the way index, or -1 if nothing was evicted. */
 static int run_trial(char **blk, int W, int *hist, int L, char *trigger) {
     if (g_sim) return plru_victim(W, hist, L);             /* self-test oracle */
+    if (g_flush) {
+        for (int i = 0; i < W; i++) _mm_clflush(blk[i]);
+        _mm_clflush(trigger);
+        _mm_mfence();
+    }
     for (int i = 0; i < W; i++) mem_load(blk[i]);          /* fill the set    */
     _mm_mfence();
     for (int i = 0; i < L; i++) mem_load(blk[hist[i]]);    /* replay history  */
     _mm_mfence();
-    for (int i = 0; i < g_l1fill_n; i++) mem_load(g_l1fill[i]); /* clear L1    */
-    _mm_mfence();
     mem_load(trigger);                                     /* force eviction  */
     _mm_mfence();
-    int victim = -1;
-    uint64_t worst = g_thr;
-    for (int i = 0; i < W; i++) {                          /* probe every way */
-        uint64_t t = time_load(blk[i]);
-        if (t > worst) { worst = t; victim = i; }
-    }
-    return victim;
+    for (int i = 0; i < g_l1fill_n; i++) mem_load(g_l1fill[i]); /* drain L1    */
+    _mm_mfence();
+    for (int i = 0; i < W; i++)                            /* first miss = victim */
+        if (time_load(blk[i]) > g_thr) return i;
+    return -1;
 }
 
 /* ----- main -------------------------------------------------------------- */
 int main(int argc, char **argv) {
-    int core = 0, W = 16, pool = 16, R = 16, l1fill = 0;
+    int core = 0, W = 16, pool = 16, R = 16;
     size_t buf_mb = 256;
     const char *in_path = NULL, *out_path = NULL;
 
@@ -395,10 +416,11 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--repeats")   && i+1 < argc) R       = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--buf-mb")    && i+1 < argc) buf_mb  = (size_t)atoi(argv[++i]);
         else if (!strcmp(argv[i], "--threshold") && i+1 < argc) g_thr   = (uint64_t)strtoull(argv[++i], 0, 10);
-        else if (!strcmp(argv[i], "--l1-fill")   && i+1 < argc) l1fill  = atoi(argv[++i]);
+        else if (!strcmp(argv[i], "--l1-fill")   && i+1 < argc) g_l1_want = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--min-detect")&& i+1 < argc) g_min_detect = atof(argv[++i]);
         else if (!strcmp(argv[i], "--force"))                   g_force = 1;
         else if (!strcmp(argv[i], "--sim"))                     g_sim = 1;
+        else if (!strcmp(argv[i], "--no-flush"))                g_flush = 0;
         else if (!strcmp(argv[i], "--in")        && i+1 < argc) in_path = argv[++i];
         else if (!strcmp(argv[i], "--out")       && i+1 < argc) out_path= argv[++i];
         else if (!strcmp(argv[i], "--verbose"))                 g_verbose = 1;
@@ -425,13 +447,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "[sim] software tree-PLRU oracle (no hardware measurement)\n");
     }
     char *trigger = poolv[pool];         /* a congruent block outside [0,pool) */
-
-    if (l1fill > 0) {                    /* distinct-offset fillers for L1 */
-        g_l1fill_n = l1fill;
-        g_l1fill = malloc(sizeof(char *) * l1fill);
-        for (int i = 0; i < l1fill; i++)
-            g_l1fill[i] = candidate((size_t)(i + 1), (offset + 64 * (i + 1)) % PAGE);
-    }
+    /* g_l1fill was built inside find_congruent_pool (same L1 set, other L2 set). */
 
     FILE *fin = fopen(in_path, "r");
     if (!fin) { fprintf(stderr, "[err] cannot open %s\n", in_path); return 1; }
