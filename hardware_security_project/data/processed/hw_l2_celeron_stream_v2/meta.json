@@ -1,0 +1,26 @@
+{
+  "generator": "cpl.data.hw_stream_dataset",
+  "code_version": "0.1.0",
+  "code_hash": "8fa6a7bef32a",
+  "created_utc": "2026-11-20T23:59:03+00:00",
+  "source": "hw",
+  "W": 16,
+  "pool": 24,
+  "repeats": 64,
+  "len_range": [
+    32,
+    96
+  ],
+  "seed": null,
+  "all_test": false,
+  "target": "hw_l2_celeron_W16",
+  "n": 100000,
+  "splits": {
+    "train": 90085,
+    "val": 4918,
+    "test": 4997
+  },
+  "overall_hit_rate": 0.55,
+  "mean_access_consistency": 0.989,
+  "seconds": 91.16
+}
