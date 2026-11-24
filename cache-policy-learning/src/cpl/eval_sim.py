@@ -161,7 +161,8 @@ def main(argv=None):
         rows["plain GRU"] = metrics(h, th, acc)
     if a.slot:
         ck = torch.load(a.slot, map_location="cpu", weights_only=False)
-        m = build_slot_model({"d_way": ck["args"]["d_way"], "d_glob": ck["args"]["d_glob"]})
+        m = build_slot_model({"d_way": ck["args"]["d_way"], "d_glob": ck["args"]["d_glob"],
+                          "use_ages": ck["args"].get("use_ages", False)})
         m.load_state_dict(ck["model"]); h, c = model_predict(m, acc, contents=True)
         rows["three-unit model"] = metrics(h, th, acc, c, tc)
     keys = ["acc_all", "acc_non_first", "acc_rd_0_7", "acc_rd_8_15", "acc_rd_16_plus",

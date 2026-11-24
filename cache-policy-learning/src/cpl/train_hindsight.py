@@ -54,6 +54,17 @@ def next_access(A: np.ndarray, L: np.ndarray) -> np.ndarray:
     return nxt
 
 
+def iterate_with_victims(data, bs, rng, with_victims):
+    """Like cpl.train_hits.iterate (shuffled), also yielding true victim ways when asked."""
+    idx = rng.permutation(len(data["lens"]))
+    for s in range(0, len(idx), bs):
+        j = idx[s : s + bs]
+        T = int(data["lens"][j].max())
+        F = data["F"][j, :T] if with_victims else None
+        yield (torch.from_numpy(data["A"][j, :T]), torch.from_numpy(data["P"][j, :T]),
+               torch.from_numpy(data["M"][j, :T]), F)
+
+
 class HindsightChooser:
     """Per-batch victim chooser + partial-label loss, called by the model each step."""
 
@@ -142,6 +153,56 @@ class HindsightChooser:
         return torch.from_numpy(v).to(dev), torch.from_numpy(ph).to(dev)
 
 
+class VictimLabelChooser:
+    """CAPACITY TESTS ON SIMULATED DATA ONLY: supervise each full-set miss with the
+    simulator's true victim way (``filled_way``). Residency then follows the true
+    history exactly (fill-order naming makes model ways = simulator ways). Loss:
+    cross-entropy of the score over ways against the true way."""
+
+    def __init__(self, P, M, F):
+        self.lab = P.numpy() > 0.5; self.M = M.numpy() > 0; self.F = F
+        self.losses, self.n_dec, self.n_incons = [], 0, 0
+
+    def __call__(self, t, way_lines, score):
+        B, W = score.shape
+        lines = way_lines.cpu().numpy()
+        v = np.zeros((B, W), np.float32); ph = np.zeros(B, np.float32)
+        tgt = np.full(B, -1, np.int64)
+        for i in range(B):
+            if not self.M[i, t]:
+                continue
+            if self.lab[i, t]:
+                ph[i] = 1.0
+                continue
+            w = int(self.F[i, t])
+            if (lines[i] == N).any():                     # empty fill: not a decision
+                if w != int(np.nonzero(lines[i] == N)[0][0]):
+                    self.n_incons += 1
+            else:
+                tgt[i] = w
+            v[i, w] = 1.0
+        sel = tgt >= 0
+        if sel.any():
+            st = torch.from_numpy(sel); tg = torch.from_numpy(tgt[sel])
+            self.losses.append(torch.nn.functional.cross_entropy(score[st], tg, reduction="sum"))
+            self.n_dec += int(sel.sum())
+        return torch.from_numpy(v), torch.from_numpy(ph)
+
+
+def load_filled_way(data_dir, split):
+    """filled_way per stream (simulated datasets only), padded with -1, aligned with load_streams."""
+    import pandas as pd
+    df = pd.read_parquet(Path(data_dir) / "samples.parquet")
+    if "filled_way" not in df.columns:
+        raise SystemExit("--victim-labels needs a simulated dataset with ground truth (filled_way)")
+    df = df[df["split"] == split].reset_index(drop=True)
+    T = int(df["filled_way"].map(len).max())
+    F = np.full((len(df), T), -1, np.int64)
+    for i, f in enumerate(df["filled_way"]):
+        F[i, :len(f)] = f
+    return F
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--data-dir", required=True)
@@ -155,6 +216,9 @@ def main(argv=None):
     ap.add_argument("--explore", type=float, default=1.0, help="Gumbel exploration at epoch 0, fades to 0")
     ap.add_argument("--conf-weight", action="store_true",
                     help="weight each decision by label confidence |2p-1| (for noisy hardware labels)")
+    ap.add_argument("--use-ages", action="store_true", help="give the model per-way line ages (recency/insertion ranks)")
+    ap.add_argument("--victim-labels", action="store_true",
+                    help="CAPACITY TEST, simulated data only: supervise with the true victims instead of hindsight")
     ap.add_argument("--max-train", type=int, default=0)
     ap.add_argument("--seed", type=int, default=1234)
     args = ap.parse_args(argv)
@@ -165,7 +229,12 @@ def main(argv=None):
     train = load_streams(args.data_dir, "train"); val = load_streams(args.data_dir, "val")
     if args.max_train and len(train["lens"]) > args.max_train:
         train = {k: v[: args.max_train] for k, v in train.items()}
-    model = build_slot_model({"d_way": args.d_way, "d_glob": args.d_glob})
+    if args.victim_labels:
+        train["F"] = load_filled_way(args.data_dir, "train")
+        if args.max_train:
+            train["F"] = train["F"][: args.max_train]
+        assert train["F"].shape[0] == len(train["lens"])
+    model = build_slot_model({"d_way": args.d_way, "d_glob": args.d_glob, "use_ages": args.use_ages})
     opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.01)
     n_params = sum(p.numel() for p in model.parameters())
     print(f"[hindsight] params={n_params:,} train_streams={len(train['lens']):,} "
@@ -176,8 +245,9 @@ def main(argv=None):
         t0 = time.time()
         explore = args.explore * max(0.0, 1 - ep / max(args.epochs - 1, 1))
         incons = decs = 0; tot = 0.0
-        for A, P, M in iterate(train, args.batch_size, True, rng):
-            ch = HindsightChooser(A, P, M, explore, args.conf_weight)
+        for A, P, M, F in iterate_with_victims(train, args.batch_size, rng, args.victim_labels):
+            ch = (VictimLabelChooser(P, M, F) if args.victim_labels
+                  else HindsightChooser(A, P, M, explore, args.conf_weight))
             model(A, chooser=ch)
             if not ch.losses:
                 continue

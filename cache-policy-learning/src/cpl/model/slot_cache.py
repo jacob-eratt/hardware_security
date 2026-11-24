@@ -21,6 +21,12 @@ Design rules (each has a reason; see the spec):
                      order is a relabelling, so nothing is lost as long as the
                      hardware's fill order is fixed. The learned way identities
                      absorb the relabelling.
+  * line ages (optional, ``use_ages``) -- per way, the recency rank (0 = most
+                     recently used) and insertion rank (0 = most recently filled) of
+                     its line. Exact bookkeeping from the access sequence, nothing
+                     learned. Every way's update and score sees the WHOLE set's age
+                     vector in way order: rules like tree-PLRU's "which pair in this
+                     quarter was used less recently" compare other ways' ages.
 
 Victims are always hard (argmax), so residency is exact and P(hit) is 0 or 1. A
 trainer may override the victim decision through ``chooser`` (hindsight training,
@@ -38,18 +44,21 @@ LOGIT = 13.8   # |logit| for a certain hit/miss (P = 1 - 1e-6)
 
 class SlotCacheModel(nn.Module):
     def __init__(self, num_blocks: int = NUM_BLOCKS, ways: int = 16, sets: int = 1,
-                 d_way: int = 32, d_glob: int = 32, d_mlp: int = 64, d_pos: int = 8) -> None:
+                 d_way: int = 32, d_glob: int = 32, d_mlp: int = 64, d_pos: int = 8,
+                 use_ages: bool = False) -> None:
         super().__init__()
         self.N, self.W, self.S = num_blocks, ways, sets
+        self.use_ages = use_ages
+        d_age = 2 + 2 * ways if use_ages else 0          # own (rec, ins) + set vectors
         self.d_way, self.d_glob = d_way, d_glob
         self.way_pos = nn.Parameter(torch.randn(ways, d_pos) * 0.5)     # way identity
         self.h0 = nn.Parameter(torch.randn(ways, d_way) * 0.1)          # per-way initial state
         # way input: [hit here, filled here, was empty, own id, used-way id, set mean, global]
-        self.way_cell = nn.GRUCell(3 + 2 * d_pos + d_way + d_glob, d_way)
+        self.way_cell = nn.GRUCell(3 + 2 * d_pos + d_way + d_glob + d_age, d_way)
         # global input: [mean of new way states, hit]
         self.glob_cell = nn.GRUCell(d_way + 1, d_glob)
         # scorer input: [way state, own id, set mean, global, was empty]
-        self.scorer = nn.Sequential(nn.Linear(d_way + d_pos + d_way + d_glob + 1, d_mlp),
+        self.scorer = nn.Sequential(nn.Linear(d_way + d_pos + d_way + d_glob + 1 + d_age, d_mlp),
                                     nn.ReLU(), nn.Linear(d_mlp, 1))
 
     def forward(self, accesses: torch.Tensor, sets: torch.Tensor | None = None,
@@ -69,6 +78,8 @@ class SlotCacheModel(nn.Module):
         h = self.h0.expand(B, S, W, self.d_way).contiguous()
         pos = self.way_pos[None].expand(B, -1, -1)
         g = torch.zeros(B, self.d_glob, device=dev)
+        last_use = torch.full((B, S, W), -1.0, device=dev)               # step of last access
+        ins_time = torch.full((B, S, W), -1.0, device=dev)               # step of last fill
         out, contents = [], []
         for t in range(T):
             b = accesses[:, t]
@@ -82,7 +93,14 @@ class SlotCacheModel(nn.Module):
             empty = (ls == N).float()
             summ = hs.mean(1, keepdim=True).expand(-1, W, -1)
             gx = g[:, None].expand(-1, W, -1)
-            score = self.scorer(torch.cat([hs, pos, summ, gx, empty[..., None]], -1)).squeeze(-1)
+            extra = []
+            if self.use_ages:
+                lu, it = last_use[ar, s], ins_time[ar, s]
+                rec = (lu[:, None, :] > lu[:, :, None]).sum(-1).float() / (W - 1)   # 0 = most recent
+                ins = (it[:, None, :] > it[:, :, None]).sum(-1).float() / (W - 1)
+                extra = [rec[..., None], ins[..., None],
+                         rec[:, None, :].expand(-1, W, -1), ins[:, None, :].expand(-1, W, -1)]
+            score = self.scorer(torch.cat([hs, pos, summ, gx, empty[..., None]] + extra, -1)).squeeze(-1)
             if chooser is not None:
                 v, hit = chooser(t, ls, score)
             else:
@@ -95,13 +113,19 @@ class SlotCacheModel(nn.Module):
 
             ls_new = torch.where(e_fill > 0, b[:, None].expand(-1, W), ls)
             used = torch.einsum("bw,bwd->bd", e_hit + e_fill, pos)[:, None].expand(-1, W, -1)
-            x = torch.cat([e_hit[..., None], e_fill[..., None], empty[..., None], pos, used, summ, gx], -1)
+            x = torch.cat([e_hit[..., None], e_fill[..., None], empty[..., None], pos, used, summ, gx] + extra, -1)
             hs_new = self.way_cell(x.reshape(B * W, -1), hs.reshape(B * W, -1)).view(B, W, -1)
             g_new = self.glob_cell(torch.cat([hs_new.mean(1), hit[:, None]], -1), g)
 
             m = nn.functional.one_hot(s, S).bool() & valid[:, None]        # write only set s
             lines = torch.where(m[..., None], ls_new[:, None], lines)
             h = torch.where(m[..., None, None], hs_new[:, None], h)
+            if self.use_ages:
+                tt = torch.full_like(hit, float(t))
+                lu_new = torch.where((e_hit + e_fill) > 0, tt[:, None], last_use[ar, s])
+                it_new = torch.where(e_fill > 0, tt[:, None], ins_time[ar, s])
+                last_use = torch.where(m[..., None], lu_new[:, None], last_use)
+                ins_time = torch.where(m[..., None], it_new[:, None], ins_time)
             g = torch.where(valid[:, None], g_new, g)
             if return_contents:
                 contents.append(torch.where(ls_new == N, torch.full_like(ls_new, -1), ls_new))
@@ -112,4 +136,5 @@ class SlotCacheModel(nn.Module):
 def build_slot_model(cfg: dict) -> SlotCacheModel:
     return SlotCacheModel(num_blocks=cfg.get("num_blocks", NUM_BLOCKS), ways=cfg.get("ways", 16),
                           sets=cfg.get("sets", 1), d_way=cfg.get("d_way", 32),
-                          d_glob=cfg.get("d_glob", 32), d_mlp=cfg.get("d_mlp", 64))
+                          d_glob=cfg.get("d_glob", 32), d_mlp=cfg.get("d_mlp", 64),
+                          use_ages=cfg.get("use_ages", False))
