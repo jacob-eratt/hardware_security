@@ -9,8 +9,12 @@ The hardware only gives hit/miss per access, but those labels constrain eviction
 At each miss the model may only evict an *allowed* way: protected lines are excluded,
 and a choice is allowed only if every remaining deadline can still be met (each miss
 evicts one line; earliest-deadline-first check). The model picks its best-scoring
-allowed way (Gumbel exploration early on), so training residency always agrees with
-the labels, and the loss is the partial-label loss -log P(victim in allowed set).
+allowed way (Gumbel exploration on non-empty ways early on), so training residency
+always agrees with the labels, and the loss is the partial-label loss
+-log P(victim in allowed set). Empty ways are filled lowest-index first (the model's
+fill-order naming, cpl.model.slot_cache); such fills are not a learned decision and
+carry no loss. If a canonical fill is ever disallowed by the labels it is counted as
+an inconsistency (on simulated data the count MUST be 0).
 
 Evaluation is the real test and uses no labels: the model runs free (hard victims)
 and is scored on hit/miss exactly like cpl.train_hits.
@@ -53,7 +57,7 @@ def next_access(A: np.ndarray, L: np.ndarray) -> np.ndarray:
 class HindsightChooser:
     """Per-batch victim chooser + partial-label loss, called by the model each step."""
 
-    def __init__(self, A, P, M, explore: float, conf_weight: bool, explore_empty: bool = False):
+    def __init__(self, A, P, M, explore: float, conf_weight: bool):
         self.A = A.numpy(); self.M = M.numpy() > 0
         self.lab = P.numpy() > 0.5                                    # majority label
         self.conf = np.abs(2 * P.numpy() - 1) if conf_weight else np.ones_like(self.lab, float)
@@ -64,10 +68,6 @@ class HindsightChooser:
         B = self.A.shape[0]
         self.last = np.full((B, N + 1), -1, np.int64)                 # last access time per line
         self.explore = explore
-        # Exploring among EMPTY ways would randomise the layout (which way each line
-        # lands in) per stream; hit/miss never reveals the layout, so the model needs a
-        # consistent fill convention of its own. Off by default.
-        self.explore_empty = explore_empty
         self.losses, self.n_dec = [], 0
         self.n_incons = 0
 
@@ -103,10 +103,7 @@ class HindsightChooser:
         allowed = np.zeros((B, W), bool); use = np.zeros(B, np.float32)
         sc = score.detach().cpu().numpy()
         if self.explore > 0:
-            noise = self.explore * -np.log(-np.log(np.random.rand(B, W).clip(1e-9, 1 - 1e-9)))
-            if not self.explore_empty:
-                noise = noise * (lines != N)
-            sc = sc + noise
+            sc = sc + self.explore * -np.log(-np.log(np.random.rand(B, W).clip(1e-9, 1 - 1e-9)))
         for i in range(B):
             if not self.M[i, t]:
                 continue
@@ -122,6 +119,11 @@ class HindsightChooser:
                 if len(where):                                        # label miss, model says present
                     self.n_incons += 1
                     v[i, int(where[0])] = 1.0                         # re-fetch into the same way
+                elif (lines[i] == N).any():                           # fill-order naming
+                    w = int(np.nonzero(lines[i] == N)[0][0])
+                    if w not in self._allowed(i, t, lines[i]):
+                        self.n_incons += 1
+                    v[i, w] = 1.0
                 else:
                     al = self._allowed(i, t, lines[i])
                     if not al:
@@ -151,8 +153,6 @@ def main(argv=None):
     ap.add_argument("--d-way", type=int, default=32)
     ap.add_argument("--d-glob", type=int, default=32)
     ap.add_argument("--explore", type=float, default=1.0, help="Gumbel exploration at epoch 0, fades to 0")
-    ap.add_argument("--explore-empty", action="store_true",
-                    help="also add exploration noise when filling empty ways (randomises layout; off by default)")
     ap.add_argument("--conf-weight", action="store_true",
                     help="weight each decision by label confidence |2p-1| (for noisy hardware labels)")
     ap.add_argument("--max-train", type=int, default=0)
@@ -177,7 +177,7 @@ def main(argv=None):
         explore = args.explore * max(0.0, 1 - ep / max(args.epochs - 1, 1))
         incons = decs = 0; tot = 0.0
         for A, P, M in iterate(train, args.batch_size, True, rng):
-            ch = HindsightChooser(A, P, M, explore, args.conf_weight, args.explore_empty)
+            ch = HindsightChooser(A, P, M, explore, args.conf_weight)
             model(A, chooser=ch)
             if not ch.losses:
                 continue
@@ -185,26 +185,24 @@ def main(argv=None):
             opt.zero_grad(set_to_none=True); loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0); opt.step()
             incons += ch.n_incons; decs += ch.n_dec; tot += float(loss) * ch.n_dec
-        ev = evaluate(model, val, "cpu", hard=True)                   # free-running, no labels
+        ev = evaluate(model, val, "cpu")                              # free-running, no labels
         print(f"[ep {ep:>2}] explore={explore:.2f} loss={tot / max(decs, 1):.4f} "
-              f"inconsistent_steps={incons} val_acc(hard, free-running)={ev['acc']:.4f} "
+              f"inconsistent_steps={incons} val_acc(free-running)={ev['acc']:.4f} "
               f"({time.time() - t0:.0f}s)", flush=True)
         if ev["acc"] > best["acc"]:
             best = ev
             torch.save({"model": model.state_dict(), "args": vars(args)}, run_dir / "best.pt")
 
-    summary = {"params": n_params, "best_val_hard": best, "base_rate_val": base_rate_baseline(train, val)}
+    summary = {"params": n_params, "best_val": best, "base_rate_val": base_rate_baseline(train, val)}
     if args.test_dir:
         model.load_state_dict(torch.load(run_dir / "best.pt", map_location="cpu")["model"])
         test = load_streams(args.test_dir, None)
-        summary["independent_test_hard"] = evaluate(model, test, "cpu", hard=True)
-        summary["independent_test_soft"] = evaluate(model, test, "cpu")
+        summary["independent_test"] = evaluate(model, test, "cpu")
         summary["base_rate_test"] = base_rate_baseline(train, test)
-        print(f"[TEST on fresh set] hard acc={summary['independent_test_hard']['acc']:.4f}  "
-              f"soft acc={summary['independent_test_soft']['acc']:.4f} "
+        print(f"[TEST on fresh set] acc={summary['independent_test']['acc']:.4f} "
               f"(base-rate acc={summary['base_rate_test']['acc']:.4f})", flush=True)
     (run_dir / "hit_summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
-    print(f"[done] best_val_hard_acc={best['acc']:.4f} -> {run_dir / 'hit_summary.json'}", flush=True)
+    print(f"[done] best_val_acc={best['acc']:.4f} -> {run_dir / 'hit_summary.json'}", flush=True)
 
 
 if __name__ == "__main__":

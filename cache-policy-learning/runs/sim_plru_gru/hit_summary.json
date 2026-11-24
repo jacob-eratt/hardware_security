@@ -1,0 +1,23 @@
+{
+  "params": 618785,
+  "best_val": {
+    "acc": 0.9402720079440398,
+    "logloss": 0.13032037311435113,
+    "n_access": 318226
+  },
+  "base_rate_val": {
+    "hit_rate": 0.5489,
+    "acc": 0.55,
+    "logloss": 0.6881
+  },
+  "independent_test": {
+    "acc": 0.9407499136496373,
+    "logloss": 0.12865826485201706,
+    "n_access": 509552
+  },
+  "base_rate_test": {
+    "hit_rate": 0.5489,
+    "acc": 0.5486,
+    "logloss": 0.6884
+  }
+}
