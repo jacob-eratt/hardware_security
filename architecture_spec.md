@@ -4,7 +4,7 @@
 **Team:** Henry Tudor · Dhwanit Kumawat · Jacob Erattuparambil
 **Scope:** the structured model that predicts per-access hit/miss for a whole cache (many sets) from measured hardware streams, how it is trained without victim labels, how it is validated, and the per-processor pipeline it runs in. It supersedes the plain GRU (`cpl.model.hit_gru`) as the main model; the plain GRU stays as the baseline.
 **Audience:** a human or an LLM coding agent implementing or extending this model. **MUST** = required; **SHOULD** = default unless there is a clear reason not to.
-**Status (2026-11-24):** see §9. Parts 2 and 3 exist for a single set; part 1, multi-set data and the validation suite do not.
+**Status (2026-11-24, evening):** see §9. Parts 2 and 3 exist for a single set and pass the single-set simulator suite (LRU, FIFO, bit-PLRU, tree-PLRU, SRRIP) trained from hit/miss labels only. Part 1, multi-set data, DRRIP and hardware training do not exist yet.
 
 ---
 
@@ -61,8 +61,13 @@ The model MUST NOT assume a known replacement policy. Fixed policies (LRU, PLRU,
 
 - **State (MUST):** `R[b, j, w, :]` for stream `b`, local set slot `j`, way `w`: a distribution over `N + 1` line tokens (stream-local line ids 0..N−1, plus token `N` = "empty / holds a pre-stream line"). Initialised to token `N` everywhere.
 - **Hit probability (MUST):** for an access to line `x` in slot `j`: `p_hit = Σ_w R[b, j, w, x]`.
-- **Update:** on a fill of way `w` with line `x`, `R[b, j, w, :] ← onehot(x)` (hard modes) or the convex mix used by soft mode. Only slot `j` changes.
-- Under hard victims (free-running and hindsight training), `R` is one-hot and `p_hit ∈ {0, 1}`.
+- **Update:** on a fill of way `w` with line `x`, `R[b, j, w, :] ← onehot(x)`. Only slot `j` changes.
+- Victims are always hard (MUST; soft and straight-through victims were tried and removed, §9), so `R` is one-hot and `p_hit ∈ {0, 1}`. The implementation stores `R` as an integer line id per way.
+- **Fill-order naming (MUST):** when the accessed set has an empty way, the fill goes to the **lowest-index empty way**, with no score and no loss, in training and evaluation alike. Which physical way hardware uses for an empty fill cannot be observed from hit/miss. Naming ways by fill order is a relabelling, so nothing is lost as long as the hardware's fill order is fixed; the learned way identities absorb the relabelling. Without this rule, hindsight training on tree-PLRU stalled (§9).
+- **Line ages (MUST):** per way, two exact counters derived from the access sequence, nothing learned:
+  - `rec[w]` = recency rank of the way's line (0 = most recently used, normalised by `W−1`);
+  - `ins[w]` = insertion rank (0 = most recently filled, normalised by `W−1`).
+  Empty ways have time −1, so they rank oldest. These are bookkeeping, like `R`, and live in the residency tracker.
 
 ### 3.3 Unit 3 — replacement unit (learned)
 
@@ -75,13 +80,14 @@ The model MUST NOT assume a known replacement policy. Fixed policies (LRU, PLRU,
 - **used-way broadcast** `u = Σ_w (e_hit[w] + e_fill[w]) · pos[w]` — the identity of the way just hit or filled, given to every way; without it tree-PLRU is unrepresentable (the set summary is a mean, which forgets which way was used);
 - **set summary** `m = mean_w h[b, j, w]` (SHOULD be upgraded to a learned set-level vector if the validation suite finds a policy the mean cannot express);
 - **set identity** `e(a)` from the decoder — lets the model distinguish e.g. set-dueling leader sets from followers; MUST be fed to the scorer, the way cell and the global cell;
-- **global state** `g`.
+- **global state** `g`;
+- **line ages** `age[w] = [rec[w], ins[w], rec[0..W−1], ins[0..W−1]]` (dimension `2 + 2W`): the way's own ranks plus the **whole set's** rank vectors in way order, given to every way. Rules such as tree-PLRU's "which pair in this quarter was used less recently" compare *other* ways' ages, so a way's own ranks are not enough. Without ages, hindsight training on tree-PLRU reached only 0.985 accuracy and 0.637 exact-stream; with them, 1.000 and 0.999 (§9).
 
 **Victim scorer (MUST):** for each way of the accessed set,
-`score[w] = MLP([h[w], pos[w], m, g, e(a), empty[w]])`, MLP 64 hidden, ReLU. Victim = `argmax_w score[w]` (hard) or `softmax(score)` (soft mode only).
+`score[w] = MLP([h[w], pos[w], m, g, e(a), empty[w], age[w]])`, MLP 64 hidden, ReLU. Victim = `argmax_w score[w]` over full sets (empty ways are handled by fill-order naming, §3.2).
 
 **Way update (MUST):** one shared `GRUCell` over all W ways of the accessed set:
-`h[w] ← GRUCell([e_hit[w], e_fill[w], empty[w], pos[w], u, m, g, e(a)], h[w])`,
+`h[w] ← GRUCell([e_hit[w], e_fill[w], empty[w], pos[w], u, m, g, e(a), age[w]], h[w])`,
 where `e_hit[w]` = 1 if this way held the hit line, `e_fill[w]` = 1 if this way was filled. Ways of other sets are not updated.
 
 **Global update (MUST):** `g ← GRUCell_g([mean_w h_new[w], hit, e(a)], g)` on every access.
@@ -96,8 +102,9 @@ Streams touch few sets, so states are kept per **local set slot**, not for all `
 
 1. `j, e = decoder(a)` → local slot, set embedding.
 2. `p_hit = Σ_w R[j, w, x]` — model output for this access.
-3. Hit: `e_hit = onehot(way holding x)`. Miss: compute `score`, pick victim `v`, `e_fill = onehot(v)`, write `x` into `R[j, v]`.
+3. Hit: `e_hit = onehot(way holding x)`. Miss: if set `j` has an empty way, `v` = lowest empty way; else compute `score` and pick victim `v`. `e_fill = onehot(v)`, write `x` into `R[j, v]`.
 4. Update `h[j, ·]` with the shared way cell, then `g` with the global cell.
+5. Update the ages of set `j`: last-use time of the hit/filled way, and insertion time of a filled way.
 
 ---
 
@@ -107,10 +114,9 @@ Streams touch few sets, so states are kept per **local set slot**, not for all `
 |---|---|---|
 | **free-running** | `argmax score` | all evaluation and reported numbers (MUST) |
 | **hindsight** | best-scoring *allowed* way (§5) | training on hardware and simulated data |
-| **oracle** | true victim supplied | diagnostics on simulated data only; MUST NOT be used for reported results |
-| soft | `softmax(score)` | legacy; plateaus at 0.93–0.94 on simulation; SHOULD NOT be used |
+| **victim labels** | true victim supplied, cross-entropy on it | capacity tests on simulated data only (`--victim-labels`); MUST NOT be used for reported results |
 
-The current code also contains straight-through victims, a temperature `tau` and an `empty_bonus`; all three failed or did not help (§9) and SHOULD be removed once this spec is implemented.
+Soft victims, straight-through victims, a temperature `tau` and an `empty_bonus` were tried, failed or did not help, and have been removed from the code (§9).
 
 ---
 
@@ -123,6 +129,7 @@ Hardware gives hit/miss per access, never the victim. Labels still constrain evi
 - never accessed again, or way empty / pre-stream line → **free**.
 
 At a miss in set `j` (MUST):
+0. If set `j` has an empty way, fill the lowest one (§3.2), with no loss. If the labels do not allow that fill, count it as inconsistent.
 1. Classify the resident ways of `j` as protected / must / free.
 2. Earliest-deadline-first feasibility: with must-lines sorted by deadline `d_1 ≤ d_2 ≤ …`, require `k ≤ #misses in set j strictly between now and d_k` for all k after the choice. Allowed = free ∪ must if feasible; otherwise only the must-lines whose removal makes it feasible.
 3. Victim = best-scoring allowed way (+ Gumbel exploration on non-empty ways only, fading 1 → 0 over training; no noise on empty-way fills).
@@ -135,18 +142,31 @@ Model selection on the validation split's **free-running** accuracy. Independent
 
 ## 6. Validation suite (MUST pass before hardware results count)
 
-Simulated datasets are made by relabelling the target machine's own measured access streams (same addresses, set mix and lengths) with a reference simulator, using that machine's `W` and set mapping. Simulators MUST be the repo's reference implementations (`hardware_security_project/src/cpl/policies/`, tree-PLRU conventions per `simulation_spec.md` §3.3).
+**Data (MUST).** Simulated datasets come from `cpl.data.sim_stream_dataset`, which runs the repo's reference simulators (`hardware_security_project/src/cpl/policies/`, tree-PLRU conventions per `simulation_spec.md` §3.3) from an empty set. Each dataset records full ground truth: hit/miss, evicted line, filled way, contents after every access and policy state. Train/val and test are generated with **different seeds** (current convention: train seed 1, test seed 2). Its tests (`tests/test_sim_stream_dataset.py`) check the bookkeeping, and check tree-PLRU against an independent recency-based oracle.
+The single-set suite so far uses synthetic streams (pool of 24 congruent lines, W = 16, length 32–96). Once multi-set streams exist (§8.1), the suite SHOULD also be run on the target machine's own measured streams relabelled by the simulators, so the address, set mix and length distributions match the hardware.
+
+**Grading (MUST)** with `cpl.eval_sim` on the independent test set, model free-running:
+- hit/miss accuracy, overall and excluding first touches;
+- accuracy by reuse distance (0–7, 8–15, 16+);
+- exact-stream rate (every access right);
+- **contents accuracy**: the predicted set of resident lines equals the true one after each access (way positions ignored);
+- contents exact-stream rate.
+Baselines are LRU, FIFO and random replacement. On tree-PLRU data, an independent tree-PLRU predictor MUST score 1.0, which checks the grader itself. Hit/miss accuracy alone hides wrong evictions that rarely affect later hits, so contents exact-stream is the headline metric for "does the model track the cache."
+
+**Diagnostics** (`cpl.analyze_sim`) run on the **validation** split only; the tool refuses the test split. It reports same-state decision accuracy by eviction index and, for tree-PLRU, the tree level of each stream's first wrong decision.
+
+**Plain-GRU baseline (MUST):** every suite policy also gets a plain GRU (`cpl.train_hits`) on the same data, to show that the structure is what helps.
 
 | Policy | Purpose | Pass (free-running, independent sim test) |
 |---|---|---|
-| LRU, FIFO | sanity | ≥ 0.99 |
-| bit-PLRU | reference-bit family | ≥ 0.99 |
+| LRU, FIFO | sanity. Near-trivial with line ages: the answer is the oldest `rec` / `ins` | ≥ 0.99 |
+| bit-PLRU | reference-bit family; state not readable from ages | ≥ 0.99 |
 | tree-PLRU | position-dependent state | ≥ 0.99 |
-| SRRIP (HP/FP) | re-reference prediction | ≥ 0.99 |
+| SRRIP (HP/FP) | re-reference prediction; state not readable from ages | ≥ 0.99 |
 | DRRIP (set dueling, multi-set) | global state + set identity | ≥ 0.99, and ablating `e(a)` or `g` MUST lose accuracy |
 | random replacement | control | reported vs its expected-accuracy ceiling; must not exceed it |
 
-Also report accuracy on streams 2× and 4× the training length. The decoder (§3.1) is validated separately.
+The pass thresholds are on hit/miss accuracy. Contents exact-stream MUST also be reported next to them. Also report accuracy on streams 2× and 4× the training length. The decoder (§3.1) is validated separately.
 
 ---
 
@@ -176,25 +196,49 @@ Also report accuracy on streams 2× and 4× the training length. The decoder (§
 
 ## 9. Status and evidence (2026-11-24)
 
-| Item | State | Evidence (simulated relabelled Celeron streams unless noted) |
+The early rows (way identity, used-way broadcast) were measured on relabelled Celeron streams with the older code. Everything from "simulator generator" down was measured on `cpl.data.sim_stream_dataset` data: 100k train streams (5% val, seed 1) and an independent 8k-stream test set (seed 2), W = 16, pool 24, length 32–96. Those rows are free-running on the test set unless they say "val".
+
+| Item | State | Evidence |
 |---|---|---|
-| Residency + replacement, one set | built (`cpl/model/slot_cache.py`) | — |
+| Residency + replacement, one set | built (`cpl/model/slot_cache.py`, 30.6k params with ages) | — |
 | Way identity | built, required | without it: stuck at random replacement (0.916) |
 | Used-way broadcast | built, required | tree-PLRU oracle victim accuracy 0.245 → 0.924 |
-| Oracle representability | passed | bit-PLRU 0.997, tree-PLRU 0.980 (free-running) |
-| Hindsight training, one set | built (`cpl/train_hindsight.py`) | bit-PLRU ~0.995; **tree-PLRU stuck at ~0.936** |
+| Soft / straight-through victims, `tau`, `empty_bonus` | removed | soft plateaued at 0.93–0.94; straight-through collapsed; annealing destabilised |
+| Simulator ground-truth generator + grader | built (`sim_stream_dataset`, `eval_sim`, `analyze_sim`) | tree-PLRU truth check scores 1.0 |
+| Plain GRU, tree-PLRU | baseline | acc 0.9407, exact-stream 0.114 |
+| Hindsight, no ages, tree-PLRU | superseded | acc 0.9854, contents 0.835, exact-stream 0.637 |
+| Capacity A: victim labels, no ages | passed | acc 1.0000, contents 0.9998, exact-stream 0.9995 |
+| Capacity B: victim labels + ages | passed | acc 1.0000, contents 0.9999, exact-stream 0.9994 |
+| **C: hit/miss only + ages + fill-order naming** (current recipe) | **passed on all 5 single-set policies** | table below |
 | Set decoder | not built | — |
 | Set identity input `e(a)` | not built | — |
-| Multi-set residency/batching | partly (set dimension exists) | — |
+| Multi-set residency/batching | partly (set dimension exists, untested) | — |
 | Engine multi-set + pairs modes | not built | — |
-| Bring-up script, validation suite | not built | — |
-| Hardware baseline | — | plain GRU 0.9706 on Celeron v2 independent test; label ceiling ≈ 0.997 |
+| Bring-up script | not built | — |
+| Hardware baseline | — | plain GRU 0.9706 on Celeron v2 independent test (R = 64); label ceiling ≈ 0.997 |
+
+**Recipe C on the single-set suite** (15 epochs, lr 1e-3, batch 256, d_way = d_glob = 32, exploration 1 → 0, model seed 1234 unless noted; ≈ 4–6 min/epoch on a laptop CPU):
+
+| Policy | acc | exact-stream | contents acc | contents exact-stream | val: streams with a wrong eviction | best fixed baseline (acc) |
+|---|---|---|---|---|---|---|
+| tree-PLRU (seed 1234) | 1.0000 | 0.9990 | 0.9996 | 0.9981 | 15 / 4,966 | LRU 0.9385 |
+| tree-PLRU (seed 2) | 0.9999 | 0.9966 | 0.9986 | 0.9942 | — | |
+| tree-PLRU (seed 3) | 0.9999 | 0.9984 | 0.9992 | 0.9962 | — | |
+| LRU | 1.0000 | 0.9999 | 1.0000 | 0.9999 | 1 / 4,966 | FIFO 0.9109 |
+| FIFO | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 0 / 4,966 | LRU 0.9109 |
+| bit-PLRU | 1.0000 | 0.9998 | 1.0000 | 0.9995 | 4 / 4,966 | LRU 0.9522 |
+| SRRIP | 0.9999 | 0.9952 | 0.9984 | **0.9769** | 114 / 4,966 | LRU 0.9360 |
+
+Inconsistent steps were 0 in every simulated run. SRRIP is the weakest: its validation accuracy was still rising at the last epoch. Plain-GRU baselines for LRU, FIFO, bit-PLRU and SRRIP have not been run yet.
 
 ---
 
 ## 10. Open problems
 
-1. **tree-PLRU under hindsight training** (blocker for §6). The model represents it given true victims but does not learn it from hit/miss alone; candidate sets are as tight as for bit-PLRU (mean 9.3 of 16 allowed), and removing exploration on empty-way fills did not help. Leading hypothesis: victim choice and line layout are mutually dependent, so training settles on a self-consistent wrong policy. Next idea: curriculum from short streams.
-2. **L1 filtering.** Accesses that hit in L1 never reach L2, so L2 replacement state is not updated although a hit is recorded. If hardware accuracy stalls, add a small L1 layer to the residency tracker.
-3. **Set summary expressiveness.** If a suite policy fails, replace the mean with a learned set-level state.
-4. **Decoder generality.** L3 slice hashing will need more address bits and more pairs; the interface (§3.1) is unchanged.
+1. ~~tree-PLRU under hindsight training~~ **Solved** by fill-order naming plus line ages (recipe C, §9).
+2. **SRRIP residual errors.** 2.3% of validation streams have at least one wrong eviction (contents exact-stream 0.977). Try longer training first, since validation was still rising. Then check with `analyze_sim` whether the errors cluster after many evictions, which would point to state the per-way GRU loses.
+3. **L1 filtering, and its effect on ages.** Accesses that hit in L1 never reach L2, so L2 replacement state is not updated although a hit is recorded. This also makes the line ages, which are computed from the access sequence, wrong on hardware. If hardware accuracy stalls, add a small L1 layer to the residency tracker (and compute ages from L1 misses only), or make the measurement avoid L1 hits.
+4. **Fill-order assumption.** Fill-order naming is exact only if the hardware's fill order for empty ways is fixed (it need not be lowest-first, just fixed). Hardware streams do not start from an empty set, so pre-stream lines behave as "free" residents. Check the hardware inconsistent-step count, which should be near 0 apart from label noise.
+5. **Set summary expressiveness.** If a suite policy fails, replace the mean with a learned set-level state.
+6. **Decoder generality.** L3 slice hashing will need more address bits and more pairs; the interface (§3.1) is unchanged.
+7. **Length generalisation.** Not yet tested on streams longer than in training (§6).
