@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from .base import LinearFillPolicy, ReplacementPolicy, run_experiment, run_miss_experiment
+from .bitplru import BitPLRU
 from .brrip import BRRIP
 from .drrip import DRRIP, DRRIP_MODES
 from .fifo import FIFO
@@ -17,6 +18,7 @@ POLICIES: dict[str, type[LinearFillPolicy]] = {
     "fifo": FIFO,
     "srrip": SRRIP,
     "brrip": BRRIP,
+    "bitplru": BitPLRU,
 }
 
 
@@ -33,6 +35,7 @@ def make_policy(name: str, W: int, seed: int | None = 0) -> LinearFillPolicy:
 
 __all__ = [
     "BRRIP",
+    "BitPLRU",
     "DRRIP",
     "DRRIP_MODES",
     "FIFO",

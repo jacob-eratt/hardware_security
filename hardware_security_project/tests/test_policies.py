@@ -19,7 +19,7 @@ from cpl.policies import (
     run_experiment,
 )
 
-NON_TREE = ["lru", "fifo", "srrip", "brrip"]
+NON_TREE = ["lru", "fifo", "srrip", "brrip", "bitplru"]
 
 
 def _filled(policy):

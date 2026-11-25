@@ -24,7 +24,7 @@ def _load(tmp_path, policy, n=300, seed=3, W=16, pool=24):
     return pd.read_parquet(out / "samples.parquet"), W
 
 
-@pytest.mark.parametrize("policy", ["plru", "lru", "fifo", "srrip"])
+@pytest.mark.parametrize("policy", ["plru", "lru", "fifo", "srrip", "bitplru"])
 def test_bookkeeping_consistent(tmp_path, policy):
     df, W = _load(tmp_path, policy)
     for _, r in df.iterrows():
