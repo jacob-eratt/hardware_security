@@ -1,0 +1,46 @@
+/Users/dhwanitkumawat/School/fall 2026/hardware_security/cache-policy-learning/src/cpl/train_hits.py:136: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /Users/runner/work/pytorch/pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:821.)
+  print(f"[ep {ep:>2}] loss={float(loss):.4f} {tag}_acc={ev['acc']:.4f} {tag}_logloss={ev['logloss']:.4f}")
+[hit] params=618,785 train_streams=90,085 train_access=5,754,718 device=cpu
+[ep  0] loss=0.1259 val_acc=0.9545 val_logloss=0.1191
+[ep  1] loss=0.1007 val_acc=0.9607 val_logloss=0.1001
+[ep  2] loss=0.0875 val_acc=0.9632 val_logloss=0.0933
+[ep  3] loss=0.0838 val_acc=0.9648 val_logloss=0.0890
+[ep  4] loss=0.0892 val_acc=0.9654 val_logloss=0.0870
+[ep  5] loss=0.0864 val_acc=0.9660 val_logloss=0.0861
+[ep  6] loss=0.0837 val_acc=0.9671 val_logloss=0.0839
+[ep  7] loss=0.0798 val_acc=0.9677 val_logloss=0.0827
+[ep  8] loss=0.0777 val_acc=0.9682 val_logloss=0.0814
+[ep  9] loss=0.0769 val_acc=0.9685 val_logloss=0.0805
+[ep 10] loss=0.0746 val_acc=0.9682 val_logloss=0.0808
+[ep 11] loss=0.0788 val_acc=0.9689 val_logloss=0.0794
+[ep 12] loss=0.0747 val_acc=0.9695 val_logloss=0.0786
+[ep 13] loss=0.0719 val_acc=0.9702 val_logloss=0.0777
+[ep 14] loss=0.0729 val_acc=0.9700 val_logloss=0.0773
+[ep 15] loss=0.0700 val_acc=0.9701 val_logloss=0.0770
+[ep 16] loss=0.0677 val_acc=0.9697 val_logloss=0.0777
+[ep 17] loss=0.0665 val_acc=0.9705 val_logloss=0.0761
+[ep 18] loss=0.0708 val_acc=0.9709 val_logloss=0.0760
+[ep 19] loss=0.0689 val_acc=0.9707 val_logloss=0.0761
+[ep 20] loss=0.0721 val_acc=0.9706 val_logloss=0.0766
+[ep 21] loss=0.0658 val_acc=0.9704 val_logloss=0.0764
+[ep 22] loss=0.0622 val_acc=0.9706 val_logloss=0.0769
+[ep 23] loss=0.0656 val_acc=0.9705 val_logloss=0.0768
+[ep 24] loss=0.0610 val_acc=0.9706 val_logloss=0.0772
+[ep 25] loss=0.0613 val_acc=0.9708 val_logloss=0.0781
+[ep 26] loss=0.0618 val_acc=0.9703 val_logloss=0.0787
+[ep 27] loss=0.0596 val_acc=0.9705 val_logloss=0.0776
+[ep 28] loss=0.0606 val_acc=0.9703 val_logloss=0.0789
+[ep 29] loss=0.0604 val_acc=0.9697 val_logloss=0.0802
+[ep 30] loss=0.0627 val_acc=0.9700 val_logloss=0.0799
+[ep 31] loss=0.0562 val_acc=0.9698 val_logloss=0.0802
+[ep 32] loss=0.0579 val_acc=0.9696 val_logloss=0.0833
+[ep 33] loss=0.0543 val_acc=0.9694 val_logloss=0.0820
+[ep 34] loss=0.0495 val_acc=0.9694 val_logloss=0.0839
+[ep 35] loss=0.0551 val_acc=0.9696 val_logloss=0.0828
+[ep 36] loss=0.0526 val_acc=0.9693 val_logloss=0.0845
+[ep 37] loss=0.0491 val_acc=0.9690 val_logloss=0.0851
+[ep 38] loss=0.0551 val_acc=0.9687 val_logloss=0.0863
+[ep 39] loss=0.0544 val_acc=0.9688 val_logloss=0.0867
+[TEST on fresh set] acc=0.9706 logloss=0.0761 (base-rate acc=0.5483)
+[done] best_val_acc=0.9709  summary -> runs/hit_celeron_v2/hit_summary.json

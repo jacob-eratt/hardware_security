@@ -1,0 +1,319 @@
+{
+  "generator": "cpl.data.hw_measure",
+  "code_version": "0.1.0",
+  "code_hash": "c4b4defeecc5",
+  "created_utc": "2026-11-20T01:39:44+00:00",
+  "seed": 1234,
+  "scale": 0.005,
+  "source": "hw",
+  "config": {
+    "seed": 1234,
+    "target": "hw_l2_celeron_W16",
+    "policy": "unknown",
+    "W": 16,
+    "data": {
+      "out_dir": "data/processed/hw_l2_celeron_W16",
+      "sizes": {
+        "train": 20000,
+        "val": 2000,
+        "test": 2000,
+        "test_long": 2000,
+        "test_xlong": 1000
+      },
+      "len_ranges": {
+        "train": [
+          0,
+          32
+        ],
+        "test_long": [
+          33,
+          128
+        ],
+        "test_xlong": [
+          129,
+          512
+        ]
+      },
+      "pool_range": null
+    },
+    "hw": {
+      "core": 0,
+      "repeats": 16,
+      "pool": 16,
+      "buf_mb": 384,
+      "cache_level": 2,
+      "threshold": null,
+      "l1_fill": 32,
+      "sim": false,
+      "min_detect": 0.6,
+      "force": true,
+      "run_id": "run0",
+      "verbose": true
+    },
+    "model": {
+      "d_emb": 32,
+      "hidden": 128,
+      "layers": 2,
+      "dropout": 0.0
+    },
+    "train": {
+      "batch_size": 512,
+      "lr": 0.001,
+      "weight_decay": 0.01,
+      "warmup_steps": 500,
+      "max_epochs": 20,
+      "grad_clip": 1.0,
+      "eval_every": 2000,
+      "curriculum": {
+        "start_len": 8,
+        "step": 8,
+        "max_len": 32
+      },
+      "early_stop_acc": 0.999
+    },
+    "noise": null
+  },
+  "W": 16,
+  "target": "hw_l2_celeron_W16",
+  "policy": "unknown",
+  "n_samples": 135,
+  "counts_per_split": {
+    "train": 100,
+    "val": 10,
+    "test": 10,
+    "test_long": 10,
+    "test_xlong": 5
+  },
+  "splits": {
+    "train": {
+      "requested": 100,
+      "generated": 100,
+      "candidates_drawn": 8192,
+      "L_range": [
+        0,
+        32
+      ],
+      "seconds": 0.23,
+      "n": 100,
+      "n_labeled": 100,
+      "frac_undetected": 0.0,
+      "mean_valid_repeats": 15.7,
+      "mean_label_consistency": 0.345,
+      "hist_len": {
+        "min": 0,
+        "max": 32,
+        "mean": 17.3
+      },
+      "victim_frac": [
+        0.02,
+        0.09,
+        0.12,
+        0.03,
+        0.05,
+        0.04,
+        0.02,
+        0.01,
+        0.07,
+        0.05,
+        0.06,
+        0.03,
+        0.03,
+        0.07,
+        0.08,
+        0.23
+      ],
+      "majority_class_acc": 0.23,
+      "agreement_with_label": {
+        "plru": 0.16,
+        "lru": 0.21,
+        "fifo": 0.02,
+        "srrip": 0.2
+      }
+    },
+    "val": {
+      "requested": 10,
+      "generated": 10,
+      "candidates_drawn": 8192,
+      "L_range": [
+        0,
+        32
+      ],
+      "seconds": 0.2,
+      "n": 10,
+      "n_labeled": 10,
+      "frac_undetected": 0.0,
+      "mean_valid_repeats": 15.9,
+      "mean_label_consistency": 0.46,
+      "hist_len": {
+        "min": 5,
+        "max": 23,
+        "mean": 13.3
+      },
+      "victim_frac": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.4,
+        0.1,
+        0.0,
+        0.0,
+        0.0,
+        0.1,
+        0.1,
+        0.0,
+        0.0,
+        0.1,
+        0.2
+      ],
+      "majority_class_acc": 0.4,
+      "agreement_with_label": {
+        "plru": 0.0,
+        "lru": 0.0,
+        "fifo": 0.0,
+        "srrip": 0.0
+      }
+    },
+    "test": {
+      "requested": 10,
+      "generated": 10,
+      "candidates_drawn": 8192,
+      "L_range": [
+        0,
+        32
+      ],
+      "seconds": 0.2,
+      "n": 10,
+      "n_labeled": 10,
+      "frac_undetected": 0.0,
+      "mean_valid_repeats": 15.7,
+      "mean_label_consistency": 0.3596,
+      "hist_len": {
+        "min": 15,
+        "max": 32,
+        "mean": 23.3
+      },
+      "victim_frac": [
+        0.2,
+        0.2,
+        0.2,
+        0.0,
+        0.1,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.1,
+        0.0,
+        0.0,
+        0.1,
+        0.1,
+        0.0
+      ],
+      "majority_class_acc": 0.2,
+      "agreement_with_label": {
+        "plru": 0.0,
+        "lru": 0.6,
+        "fifo": 0.2,
+        "srrip": 0.6
+      }
+    },
+    "test_long": {
+      "requested": 10,
+      "generated": 10,
+      "candidates_drawn": 8192,
+      "L_range": [
+        33,
+        128
+      ],
+      "seconds": 0.59,
+      "n": 10,
+      "n_labeled": 10,
+      "frac_undetected": 0.0,
+      "mean_valid_repeats": 15.8,
+      "mean_label_consistency": 0.4733,
+      "hist_len": {
+        "min": 50,
+        "max": 117,
+        "mean": 82.7
+      },
+      "victim_frac": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.1,
+        0.1,
+        0.1,
+        0.0,
+        0.1,
+        0.0,
+        0.1,
+        0.2,
+        0.2,
+        0.0,
+        0.1
+      ],
+      "majority_class_acc": 0.2,
+      "agreement_with_label": {
+        "plru": 0.2,
+        "lru": 0.4,
+        "fifo": 0.0,
+        "srrip": 0.2
+      }
+    },
+    "test_xlong": {
+      "requested": 5,
+      "generated": 5,
+      "candidates_drawn": 8192,
+      "L_range": [
+        129,
+        512
+      ],
+      "seconds": 1.97,
+      "n": 5,
+      "n_labeled": 5,
+      "frac_undetected": 0.0,
+      "mean_valid_repeats": 15.8,
+      "mean_label_consistency": 0.5975,
+      "hist_len": {
+        "min": 245,
+        "max": 459,
+        "mean": 357.6
+      },
+      "victim_frac": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.2,
+        0.2,
+        0.2,
+        0.0,
+        0.2,
+        0.0,
+        0.0,
+        0.2
+      ],
+      "majority_class_acc": 0.2,
+      "agreement_with_label": {
+        "plru": 0.2,
+        "lru": 0.8,
+        "fifo": 0.0,
+        "srrip": 0.0
+      }
+    }
+  },
+  "timing_seconds": {
+    "histories": 3.19,
+    "measurement": 0.95,
+    "total": 5.54
+  }
+}

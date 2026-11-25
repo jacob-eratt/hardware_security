@@ -1,0 +1,36 @@
+\section{Background}
+\label{sec:background}
+
+\subsection{CPU Caches and Replacement Policies}
+Modern processors use a hierarchy of caches (L1, L2, and L3) to reduce memory access latency. Most caches are set-associative, meaning memory blocks map to specific cache sets, each containing a fixed number of ways. When a cache set is full and a new block must be inserted, a cache replacement policy determines which existing block is evicted.
+Common replacement policies include:
+\begin{itemize}
+    \item \textbf{Least Recently Used (LRU):} Evicts the block that has not been accessed for the longest time.
+    \item \textbf{First-In First-Out (FIFO):} Evicts the block that has been in the cache the longest.
+    \item \textbf{Pseudo-LRU (PLRU):} Approximates LRU using less hardware state, often through a binary tree of replacement bits.
+    \item \textbf{Re-Reference Interval Prediction (RRIP):} Uses prediction values to estimate which blocks are least likely to be accessed again soon. Each block has a small counter, typically 0--3, that is reset to 0 on a hit. On a miss, a block with the value 3 is evicted; if none exists, every counter is incremented until one reaches 3. RRIP variants differ in the value assigned to newly inserted blocks:
+    \begin{itemize}
+        \item \textbf{Static RRIP (SRRIP)} inserts new blocks with the value 2, giving them time to be reused before eviction. This protects frequently used blocks from long sequences of blocks that are used only once.
+        \item \textbf{Bimodal RRIP (BRRIP)} usually inserts new blocks with the value 3, so they are evicted first unless reused quickly, and occasionally (with probability 1/32) with the value 2. This keeps part of the working set cached when it is larger than the cache.
+        \item \textbf{Dynamic RRIP (DRRIP)} is an adaptive policy that chooses between SRRIP and BRRIP at run time using set dueling. A few leader sets always use SRRIP and a few always use BRRIP, and a shared counter tracks which group misses less. All other sets follow the better-performing policy.
+    \end{itemize}
+\end{itemize}
+Although these policies are well understood, the exact replacement mechanisms used in commercial processors, particularly in the Last-Level Cache (LLC), are often undocumented.
+
+\subsection{Cache Replacement and Hardware Security}
+Cache replacement policies are important for hardware security because many cache-based side-channel attacks rely on evicting specific cache lines. For example, in a Prime+Probe attack, an attacker fills a cache set with known data, allows a victim program to execute, and then measures access times to determine whether any lines were evicted.
+
+The effectiveness of these attacks depends partly on understanding the cache replacement policy. Different policies may evict different blocks after the same sequence of memory accesses. Therefore, identifying the replacement behavior of a processor can improve the reliability of cache-based experiments and security evaluations.
+
+
+\subsection{Characterizing Cache Replacement Behavior}
+Cache replacement behavior can be studied by generating controlled memory-access sequences and observing which blocks are evicted. For a $W$-way cache set, an experiment can fill the set with $W$ known blocks, perform a sequence of accesses, and introduce an additional block to force an eviction. By measuring cache hits and misses, the evicted block can be identified.
+
+However, hardware measurements can be affected by prefetching, competing memory accesses, and other system activity. Additionally, probing a cache line can modify the cache state, making careful experiment design necessary.
+
+\subsection{Neural Sequence Models}
+Neural sequence models can learn relationships between previous memory accesses and subsequent eviction decisions. One relevant architecture for our project is Gated Recurrent Units (GRUs).
+
+GRUs maintain a hidden state that captures information from earlier accesses. They can be trained to predict which cache block will be evicted based on the history of memory accesses.
+
+By training these models on known replacement policies and comparing their predictions against hardware measurements, we can investigate whether neural networks can learn replacement behavior and help identify undocumented cache policies.

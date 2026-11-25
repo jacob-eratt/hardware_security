@@ -1,0 +1,319 @@
+{
+  "generator": "cpl.data.hw_measure",
+  "code_version": "0.1.0",
+  "code_hash": "98d16963eb05",
+  "created_utc": "2026-11-20T02:10:23+00:00",
+  "seed": 1234,
+  "scale": 1.0,
+  "source": "hw",
+  "config": {
+    "seed": 1234,
+    "target": "hw_l2_celeron_W16",
+    "policy": "unknown",
+    "W": 16,
+    "data": {
+      "out_dir": "data/processed/hw_l2_celeron_W16",
+      "sizes": {
+        "train": 20000,
+        "val": 2000,
+        "test": 2000,
+        "test_long": 2000,
+        "test_xlong": 1000
+      },
+      "len_ranges": {
+        "train": [
+          0,
+          32
+        ],
+        "test_long": [
+          33,
+          128
+        ],
+        "test_xlong": [
+          129,
+          512
+        ]
+      },
+      "pool_range": null
+    },
+    "hw": {
+      "core": 0,
+      "repeats": 16,
+      "pool": 16,
+      "buf_mb": 256,
+      "cache_level": 2,
+      "threshold": null,
+      "l1_fill": 0,
+      "min_detect": 0.6,
+      "force": false,
+      "sim": false,
+      "run_id": "run0",
+      "verbose": true
+    },
+    "model": {
+      "d_emb": 32,
+      "hidden": 128,
+      "layers": 2,
+      "dropout": 0.0
+    },
+    "train": {
+      "batch_size": 512,
+      "lr": 0.001,
+      "weight_decay": 0.01,
+      "warmup_steps": 500,
+      "max_epochs": 20,
+      "grad_clip": 1.0,
+      "eval_every": 2000,
+      "curriculum": {
+        "start_len": 8,
+        "step": 8,
+        "max_len": 32
+      },
+      "early_stop_acc": 0.999
+    },
+    "noise": null
+  },
+  "W": 16,
+  "target": "hw_l2_celeron_W16",
+  "policy": "unknown",
+  "n_samples": 27000,
+  "counts_per_split": {
+    "train": 20000,
+    "val": 2000,
+    "test": 2000,
+    "test_long": 2000,
+    "test_xlong": 1000
+  },
+  "splits": {
+    "train": {
+      "requested": 20000,
+      "generated": 20000,
+      "candidates_drawn": 24576,
+      "L_range": [
+        0,
+        32
+      ],
+      "seconds": 0.76,
+      "n": 20000,
+      "n_labeled": 20000,
+      "frac_undetected": 0.0,
+      "mean_valid_repeats": 15.94,
+      "mean_label_consistency": 0.8845,
+      "hist_len": {
+        "min": 0,
+        "max": 32,
+        "mean": 15.89
+      },
+      "victim_frac": [
+        0.4317,
+        0.1898,
+        0.1124,
+        0.0673,
+        0.0471,
+        0.0354,
+        0.0165,
+        0.009,
+        0.0119,
+        0.0184,
+        0.0267,
+        0.0114,
+        0.0047,
+        0.0092,
+        0.0061,
+        0.0023
+      ],
+      "majority_class_acc": 0.4317,
+      "agreement_with_label": {
+        "plru": 0.2278,
+        "lru": 0.9513,
+        "fifo": 0.4317,
+        "srrip": 0.9513
+      }
+    },
+    "val": {
+      "requested": 2000,
+      "generated": 2000,
+      "candidates_drawn": 49152,
+      "L_range": [
+        0,
+        32
+      ],
+      "seconds": 1.32,
+      "n": 2000,
+      "n_labeled": 2000,
+      "frac_undetected": 0.0,
+      "mean_valid_repeats": 15.95,
+      "mean_label_consistency": 0.8849,
+      "hist_len": {
+        "min": 2,
+        "max": 32,
+        "mean": 16.15
+      },
+      "victim_frac": [
+        0.416,
+        0.2025,
+        0.1135,
+        0.0655,
+        0.0565,
+        0.0355,
+        0.019,
+        0.0065,
+        0.007,
+        0.019,
+        0.025,
+        0.0105,
+        0.005,
+        0.0115,
+        0.0035,
+        0.0035
+      ],
+      "majority_class_acc": 0.416,
+      "agreement_with_label": {
+        "plru": 0.205,
+        "lru": 0.9465,
+        "fifo": 0.416,
+        "srrip": 0.946
+      }
+    },
+    "test": {
+      "requested": 2000,
+      "generated": 2000,
+      "candidates_drawn": 49152,
+      "L_range": [
+        0,
+        32
+      ],
+      "seconds": 1.31,
+      "n": 2000,
+      "n_labeled": 2000,
+      "frac_undetected": 0.0,
+      "mean_valid_repeats": 15.95,
+      "mean_label_consistency": 0.8846,
+      "hist_len": {
+        "min": 1,
+        "max": 32,
+        "mean": 16.58
+      },
+      "victim_frac": [
+        0.414,
+        0.182,
+        0.1145,
+        0.071,
+        0.05,
+        0.0435,
+        0.0145,
+        0.007,
+        0.0135,
+        0.0185,
+        0.0315,
+        0.011,
+        0.0045,
+        0.0135,
+        0.008,
+        0.003
+      ],
+      "majority_class_acc": 0.414,
+      "agreement_with_label": {
+        "plru": 0.232,
+        "lru": 0.9435,
+        "fifo": 0.414,
+        "srrip": 0.94
+      }
+    },
+    "test_long": {
+      "requested": 2000,
+      "generated": 2000,
+      "candidates_drawn": 8192,
+      "L_range": [
+        33,
+        128
+      ],
+      "seconds": 0.61,
+      "n": 2000,
+      "n_labeled": 2000,
+      "frac_undetected": 0.0,
+      "mean_valid_repeats": 15.55,
+      "mean_label_consistency": 0.7534,
+      "hist_len": {
+        "min": 33,
+        "max": 128,
+        "mean": 81.33
+      },
+      "victim_frac": [
+        0.2545,
+        0.1195,
+        0.099,
+        0.0705,
+        0.0575,
+        0.058,
+        0.0335,
+        0.032,
+        0.032,
+        0.041,
+        0.0475,
+        0.0295,
+        0.027,
+        0.034,
+        0.036,
+        0.0285
+      ],
+      "majority_class_acc": 0.2545,
+      "agreement_with_label": {
+        "plru": 0.1675,
+        "lru": 0.5595,
+        "fifo": 0.2545,
+        "srrip": 0.422
+      }
+    },
+    "test_xlong": {
+      "requested": 1000,
+      "generated": 1000,
+      "candidates_drawn": 8192,
+      "L_range": [
+        129,
+        512
+      ],
+      "seconds": 1.99,
+      "n": 1000,
+      "n_labeled": 1000,
+      "frac_undetected": 0.0,
+      "mean_valid_repeats": 15.47,
+      "mean_label_consistency": 0.7275,
+      "hist_len": {
+        "min": 129,
+        "max": 512,
+        "mean": 321.4
+      },
+      "victim_frac": [
+        0.28,
+        0.13,
+        0.107,
+        0.082,
+        0.069,
+        0.035,
+        0.029,
+        0.023,
+        0.022,
+        0.044,
+        0.054,
+        0.02,
+        0.026,
+        0.034,
+        0.025,
+        0.02
+      ],
+      "majority_class_acc": 0.28,
+      "agreement_with_label": {
+        "plru": 0.167,
+        "lru": 0.481,
+        "fifo": 0.28,
+        "srrip": 0.28
+      }
+    }
+  },
+  "timing_seconds": {
+    "histories": 5.99,
+    "measurement": 3.93,
+    "total": 13.87
+  }
+}

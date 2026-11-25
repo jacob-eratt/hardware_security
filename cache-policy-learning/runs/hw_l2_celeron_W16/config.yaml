@@ -1,0 +1,64 @@
+seed: 1234
+target: hw_l2_celeron_W16
+policy: unknown
+W: 16
+data:
+  out_dir: data/processed/hw_l2_celeron_W16
+  sizes:
+    train: 20000
+    val: 2000
+    test: 2000
+    test_long: 2000
+    test_xlong: 1000
+  len_ranges:
+    train:
+    - 0
+    - 32
+    test_long:
+    - 33
+    - 128
+    test_xlong:
+    - 129
+    - 512
+  pool_range: null
+hw:
+  core: 0
+  repeats: 16
+  pool: 16
+  buf_mb: 256
+  cache_level: 2
+  threshold: null
+  l1_fill: 0
+  min_detect: 0.6
+  force: false
+  sim: false
+  run_id: run0
+  verbose: true
+model:
+  d_emb: 32
+  hidden: 128
+  layers: 2
+  dropout: 0.0
+train:
+  batch_size: 512
+  lr: 0.001
+  betas:
+  - 0.9
+  - 0.999
+  weight_decay: 0.01
+  warmup_steps: 500
+  min_lr: 1.0e-05
+  max_epochs: 20
+  max_steps: null
+  grad_clip: 1.0
+  eval_every: 2000
+  curriculum:
+    start_len: 8
+    step: 8
+    max_len: 32
+  early_stop_acc: 0.999
+  early_stop_patience: 2
+  device: cpu
+  use_mode_token: true
+noise: null
+data_dir: ../hardware_security_project/data/processed/hw_l2_celeron_W16

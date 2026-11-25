@@ -1,0 +1,317 @@
+{
+  "generator": "cpl.data.generate",
+  "code_version": "0.1.0",
+  "code_hash": "69e13945540e",
+  "created_utc": "2026-11-07T02:55:28+00:00",
+  "seed": 1234,
+  "scale": 1.0,
+  "config": {
+    "seed": 1234,
+    "target": "sim_plru_W4",
+    "policy": "plru",
+    "W": 4,
+    "data": {
+      "out_dir": "data/processed/sim_plru_W4",
+      "sizes": {
+        "train": 200000,
+        "val": 50000,
+        "test": 50000,
+        "test_long": 50000,
+        "test_xlong": 20000,
+        "test_diag": 20000
+      },
+      "len_ranges": {
+        "train": [
+          0,
+          32
+        ],
+        "test_long": [
+          33,
+          128
+        ],
+        "test_xlong": [
+          129,
+          512
+        ],
+        "test_diag": [
+          0,
+          32
+        ]
+      },
+      "diag_require": "any",
+      "diag_policies": [
+        "plru",
+        "lru"
+      ],
+      "compare_policies": [
+        "lru",
+        "fifo",
+        "srrip"
+      ]
+    },
+    "model": {
+      "d_emb": 32,
+      "hidden": 128,
+      "layers": 2,
+      "dropout": 0.0
+    },
+    "train": {
+      "batch_size": 512,
+      "lr": 0.001,
+      "weight_decay": 0.01,
+      "warmup_steps": 500,
+      "max_epochs": 20,
+      "grad_clip": 1.0,
+      "eval_every": 2000,
+      "curriculum": {
+        "start_len": 8,
+        "step": 8,
+        "max_len": 32
+      },
+      "early_stop_acc": 0.999
+    },
+    "noise": null
+  },
+  "W": 4,
+  "target": "sim_plru_W4",
+  "policy": "plru",
+  "n_samples": 390000,
+  "counts_per_split": {
+    "train": 200000,
+    "val": 50000,
+    "test": 50000,
+    "test_long": 50000,
+    "test_xlong": 20000,
+    "test_diag": 20000
+  },
+  "splits": {
+    "train": {
+      "requested": 200000,
+      "generated": 200000,
+      "candidates_drawn": 245760,
+      "L_range": [
+        0,
+        32
+      ],
+      "gen_type": "random",
+      "seconds": 1.56,
+      "n": 200000,
+      "n_unique_histories": 172545,
+      "hist_len": {
+        "min": 0,
+        "max": 32,
+        "mean": 16.83
+      },
+      "victim_counts": [
+        58487,
+        45224,
+        50901,
+        45388
+      ],
+      "victim_frac": [
+        0.2924,
+        0.2261,
+        0.2545,
+        0.2269
+      ],
+      "majority_class_acc": 0.2924,
+      "agreement_with_label": {
+        "plru": 1.0,
+        "lru": 0.6726,
+        "fifo": 0.2924,
+        "srrip": 0.3438
+      }
+    },
+    "val": {
+      "requested": 50000,
+      "generated": 50000,
+      "candidates_drawn": 1204224,
+      "L_range": [
+        0,
+        32
+      ],
+      "gen_type": "random",
+      "seconds": 5.67,
+      "n": 50000,
+      "n_unique_histories": 46009,
+      "hist_len": {
+        "min": 2,
+        "max": 32,
+        "mean": 18.4
+      },
+      "victim_counts": [
+        12136,
+        11952,
+        14411,
+        11501
+      ],
+      "victim_frac": [
+        0.2427,
+        0.239,
+        0.2882,
+        0.23
+      ],
+      "majority_class_acc": 0.2882,
+      "agreement_with_label": {
+        "plru": 1.0,
+        "lru": 0.6434,
+        "fifo": 0.2427,
+        "srrip": 0.2899
+      }
+    },
+    "test": {
+      "requested": 50000,
+      "generated": 50000,
+      "candidates_drawn": 1220608,
+      "L_range": [
+        0,
+        32
+      ],
+      "gen_type": "random",
+      "seconds": 5.57,
+      "n": 50000,
+      "n_unique_histories": 46569,
+      "hist_len": {
+        "min": 3,
+        "max": 32,
+        "mean": 18.73
+      },
+      "victim_counts": [
+        12852,
+        11961,
+        12817,
+        12370
+      ],
+      "victim_frac": [
+        0.257,
+        0.2392,
+        0.2563,
+        0.2474
+      ],
+      "majority_class_acc": 0.257,
+      "agreement_with_label": {
+        "plru": 1.0,
+        "lru": 0.6653,
+        "fifo": 0.257,
+        "srrip": 0.306
+      }
+    },
+    "test_long": {
+      "requested": 50000,
+      "generated": 50000,
+      "candidates_drawn": 57344,
+      "L_range": [
+        33,
+        128
+      ],
+      "gen_type": "random",
+      "seconds": 0.78,
+      "n": 50000,
+      "n_unique_histories": 50000,
+      "hist_len": {
+        "min": 33,
+        "max": 128,
+        "mean": 80.56
+      },
+      "victim_counts": [
+        12692,
+        12475,
+        12497,
+        12336
+      ],
+      "victim_frac": [
+        0.2538,
+        0.2495,
+        0.2499,
+        0.2467
+      ],
+      "majority_class_acc": 0.2538,
+      "agreement_with_label": {
+        "plru": 1.0,
+        "lru": 0.6658,
+        "fifo": 0.2538,
+        "srrip": 0.2539
+      }
+    },
+    "test_xlong": {
+      "requested": 20000,
+      "generated": 20000,
+      "candidates_drawn": 24576,
+      "L_range": [
+        129,
+        512
+      ],
+      "gen_type": "random",
+      "seconds": 1.08,
+      "n": 20000,
+      "n_unique_histories": 20000,
+      "hist_len": {
+        "min": 129,
+        "max": 512,
+        "mean": 320.65
+      },
+      "victim_counts": [
+        5030,
+        5024,
+        4991,
+        4955
+      ],
+      "victim_frac": [
+        0.2515,
+        0.2512,
+        0.2495,
+        0.2477
+      ],
+      "majority_class_acc": 0.2515,
+      "agreement_with_label": {
+        "plru": 1.0,
+        "lru": 0.6671,
+        "fifo": 0.2515,
+        "srrip": 0.2515
+      }
+    },
+    "test_diag": {
+      "requested": 20000,
+      "generated": 20000,
+      "candidates_drawn": 81920,
+      "L_range": [
+        0,
+        32
+      ],
+      "gen_type": "diagnostic",
+      "seconds": 0.29,
+      "n": 20000,
+      "n_unique_histories": 20000,
+      "hist_len": {
+        "min": 6,
+        "max": 32,
+        "mean": 19.67
+      },
+      "victim_counts": [
+        5005,
+        4879,
+        5066,
+        5050
+      ],
+      "victim_frac": [
+        0.2502,
+        0.244,
+        0.2533,
+        0.2525
+      ],
+      "majority_class_acc": 0.2533,
+      "agreement_with_label": {
+        "plru": 1.0,
+        "lru": 0.0,
+        "fifo": 0.2502,
+        "srrip": 0.233
+      }
+    }
+  },
+  "timing_seconds": {
+    "histories": 14.95,
+    "simulation": 1.0,
+    "total": 24.25
+  },
+  "histories_parquet_rows": 1773187
+}

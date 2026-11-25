@@ -1,0 +1,6 @@
+**/_measure_tmp/
+measure/*.o
+measure/cacheprobe
+measure/cacheprobe.exe
+measure/l3probe
+measure/l3probe.exe

@@ -1,0 +1,59 @@
+# Hardware-measured dataset for the L2 cache of an Intel Celeron.
+#
+# Tuned for the test machine: Celeron N3450 (Apollo Lake / Goldmont), Linux.
+#   - L2 is 16-way, 64 B lines  => W = 16 (below).
+#   - "L2: 2 MiB (2 instances)" => each L2 is SHARED by a 2-core module, so the
+#     module-sibling core pollutes the set you measure. Pin to one core (hw.core)
+#     and keep its sibling idle/offline. Find the sibling with:
+#         cat /sys/devices/system/cpu/cpu0/cache/index2/shared_cpu_list
+#     and offline it, e.g.:  echo 0 | sudo tee /sys/devices/system/cpu/cpu1/online
+# For a different part, confirm the L2 ways (lscpu, or CPUID leaf 4). The finder
+# locates ONE set by timing, so only W must be right; non-power-of-two W still
+# measures but drops PLRU from the comparison table.
+seed: 1234
+target: hw_l2_celeron_W16
+policy: unknown            # we are measuring it, not assuming it
+W: 16                      # Celeron N3450 L2 is 16-way
+
+data:
+  out_dir: data/processed/hw_l2_celeron_W16
+  # Start tiny to validate the setup end to end, then scale up with --scale.
+  sizes: {train: 20000, val: 2000, test: 2000, test_long: 2000, test_xlong: 1000}
+  len_ranges: {train: [0, 32], test_long: [33, 128], test_xlong: [129, 512]}
+  # pool_range null => hits-only histories (block ids 0..W-1), the PLRU setup.
+  # Set e.g. [16, 20] to include misses for RRIP-style experiments; then also
+  # raise hw.pool below so the engine finds enough congruent addresses.
+  pool_range: null
+
+hw:
+  core: 0                  # pin to one (ideally otherwise-idle) logical core
+  repeats: 64              # trials per history -> victim_counts; raise if noisy
+  pool: 16                 # congruent addresses to find (>= W; >= max block id + 1)
+  buf_mb: 256              # bigger buffer => easier to find a full eviction set
+  cache_level: 2
+  threshold: null          # null = auto-calibrate; else override in TSC cycles
+  l1_fill: 0               # >0 accesses that many fillers before probing, to
+                           # push the set out of L1 so the probe reads L2 state
+  min_detect: 0.6          # require this victim-detection rate when validating
+                           # the eviction set; lower if the target is noisy
+  force: false             # true => use best-effort set even below min_detect
+  sim: false               # true => software tree-PLRU oracle, NO hardware
+                           # measurement (self-test: a sim dataset must have
+                           # agreement_with_label.plru == 1.0). Set back to
+                           # false for real measurement.
+  run_id: run0
+  verbose: true
+
+# The trainer/model block is unchanged from the simulator configs.
+model: {d_emb: 32, hidden: 128, layers: 2, dropout: 0.0}
+train:
+  batch_size: 512
+  lr: 1.0e-3
+  weight_decay: 0.01
+  warmup_steps: 500
+  max_epochs: 20
+  grad_clip: 1.0
+  eval_every: 2000
+  curriculum: {start_len: 8, step: 8, max_len: 32}
+  early_stop_acc: 0.999
+noise: null

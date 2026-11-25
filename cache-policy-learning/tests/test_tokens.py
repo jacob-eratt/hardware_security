@@ -45,3 +45,22 @@ def test_collate():
     assert b["tokens"][0, 8].item() == NEW and b["tokens"][1, 10].item() == NEW
     assert (b["tokens"][0, 9:] == PAD).all()
     assert b["label"].tolist() == [2, 2]
+
+
+def test_mode_token_layout():
+    from cpl.data.tokens import POLICY_TOKENS, mode_token
+
+    W, h = 16, [3, 17, 2]
+    seq = encode(h, W, "brrip")
+    assert seq[:2] == [FILL, POLICY_TOKENS["brrip"]] == [FILL, mode_token("brrip")]
+    assert len(seq) == seq_len(W, len(h), mode=True)
+    assert seq[new_position(W, len(h), mode=True)] == NEW
+    assert encode(h, W, None) == [FILL] + seq[2:]
+    with pytest.raises(ValueError):
+        mode_token("fifo_typo")
+
+
+def test_padding_mixed_modes():
+    tokens, new_pos = encode_padded([[1, 2], [1, 2]], [4, 4], ["srrip", None])
+    assert new_pos.tolist() == [4 + 2 + 3, 4 + 2 + 2]
+    assert tokens[0, new_pos[0]] == NEW and tokens[1, new_pos[1]] == NEW

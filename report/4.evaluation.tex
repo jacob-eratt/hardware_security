@@ -1,0 +1,127 @@
+\section{Evaluation}
+\label{sec:evaluation}
+
+\subsection{Initial Simulation Results}
+
+Our initial experiments demonstrate that the GRU can learn
+simulated tree-PLRU replacement behavior with near-perfect
+accuracy across all three associativities.
+
+\begin{table}[htbp]
+\centering
+\caption{GRU Performance on Simulated Tree-PLRU}
+\label{tab:gru_results}
+\begin{tabular}{|c|c|c|c|}
+\hline
+\textbf{Ways} & \textbf{Train Samples} &
+\textbf{Test Accuracy} & \textbf{Train Time} \\
+\hline
+4  & 200,000   & 100\%    & 3.3 min  \\
+8  & 200,000   & 99.988\% & 3.8 min  \\
+16 & 1,000,000 & 100\%    & 12.1 min \\
+\hline
+\end{tabular}
+\end{table}
+
+All models reached the target validation accuracy of
+99.9\% within four epochs. The 16-way model required
+more training data, reflecting the increased complexity
+of learning replacement behavior for larger caches.
+
+These results demonstrate that our model can accurately
+predict eviction victims under controlled simulation
+conditions. However, the test sequences follow the same
+distribution as the training data and contain no
+measurement noise, so performance on real hardware
+remains to be evaluated.
+
+\subsection{Adaptive Policy Results}
+
+We trained the 16-way DRRIP model for ten epochs, and it
+reached 96.1\% test accuracy. As
+Table~\ref{tab:drrip_results} shows, accuracy decreased as
+the number of misses in a history increased, especially in
+SRRIP mode. Each miss moves a new block into the set and
+can age every way's counter, so the model must track much
+more state than for PLRU. Accuracy also decreased on
+histories longer than those used in training, which
+contain more misses.
+
+We also trained the same model without the mode token. In
+that case identical histories carry different labels, so
+no model can exceed about 66\% accuracy. It reached
+64.5\%, close to this limit, which confirms that the mode
+cannot be inferred from a single set's history and must
+be supplied.
+
+To check whether this effect is specific to DRRIP, we
+trained the same model on the same histories labeled with
+tree-PLRU. It reached 73.6\% test accuracy, and its accuracy
+decreased more steeply with misses
+(Table~\ref{tab:drrip_results}). With hits only, the PLRU
+victim depends only on the order of recent accesses. With
+misses, each new block is placed in the way the tree
+selects, so the model must track which block occupies each
+way as well as the tree bits. Histories without misses were
+still predicted with 99.5\% accuracy even at 33--128
+accesses, so the model generalizes to longer histories when
+blocks do not move.
+
+This could be a problem for our hardware experiments.
+Distinguishing adaptive policies requires histories with
+misses, and the policies we expect on our hardware targets
+also rely on per-way counters. Since accuracy decreased
+with misses for both policies, tracking blocks across
+misses is the main challenge. In our next steps, we will
+investigate whether a larger model, more training histories
+with many misses, or predicting the evicted block instead
+of the way improve accuracy in these cases.
+
+\begin{table}[htbp]
+\centering
+\caption{GRU Accuracy on the Same Simulated 16-Way Histories by Misses in the History}
+\label{tab:drrip_results}
+\begin{tabular}{|c|c|c|c|}
+\hline
+\textbf{Misses} & \multicolumn{2}{c|}{\textbf{DRRIP}} & \textbf{PLRU} \\
+\cline{2-3}
+ & \textbf{SRRIP} & \textbf{BRRIP} & \\
+\hline
+0       & 100\%   & 100\%   & 100\%   \\
+3--4    & 98.7\%  & 97.3\%  & 65.1\%  \\
+5--8    & 90.0\%  & 94.4\%  & 39.9\%  \\
+9--16   & 53.2\%  & 92.6\%  & 20.7\%  \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Planned Model Evaluation}
+
+We plan to evaluate generalization using longer access
+histories of up to 512 accesses and diagnostic sequences
+where PLRU and LRU predict different eviction victims.
+We will also measure per-victim accuracy, model confidence,
+training time, and sample efficiency.
+
+\subsection{Hardware Evaluation and Policy Comparison}
+
+After collecting hardware measurements from the L2 of the
+Intel Celeron N3450, we will evaluate
+the model's ability to predict actual eviction outcomes.
+We will compare these predictions against known replacement
+policies, including LRU, FIFO, PLRU, and RRIP, by measuring
+the percentage of access histories for which each policy
+predicts the observed victim.
+
+Diagnostic sequences will help distinguish between
+candidate policies. Our model is accurate on hits-only
+histories, so we will use it for policy comparison on
+those first. Since our DRRIP results show that adaptive
+modes are nearly indistinguishable on hits-only histories,
+we will add histories with misses where needed, and compare
+those directly against the simulators until the model is
+accurate on them. If
+no known policy consistently
+matches hardware behavior, we will investigate whether
+the processor uses an adaptive, randomized, or
+undocumented replacement mechanism.

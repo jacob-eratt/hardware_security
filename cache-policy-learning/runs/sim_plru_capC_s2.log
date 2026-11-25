@@ -1,0 +1,18 @@
+[hindsight] params=30,593 train_streams=95,034 train_access=6,082,267
+[ep  0] explore=1.00 loss=0.7515 inconsistent_steps=0 val_acc(free-running)=0.9439 (251s)
+[ep  1] explore=0.93 loss=0.6501 inconsistent_steps=0 val_acc(free-running)=0.9497 (238s)
+[ep  2] explore=0.86 loss=0.5940 inconsistent_steps=0 val_acc(free-running)=0.9562 (238s)
+[ep  3] explore=0.79 loss=0.5146 inconsistent_steps=0 val_acc(free-running)=0.9656 (242s)
+[ep  4] explore=0.71 loss=0.4234 inconsistent_steps=0 val_acc(free-running)=0.9739 (243s)
+[ep  5] explore=0.64 loss=0.3027 inconsistent_steps=0 val_acc(free-running)=0.9838 (244s)
+[ep  6] explore=0.57 loss=0.1645 inconsistent_steps=0 val_acc(free-running)=0.9963 (256s)
+[ep  7] explore=0.50 loss=0.0667 inconsistent_steps=0 val_acc(free-running)=0.9986 (265s)
+[ep  8] explore=0.43 loss=0.0282 inconsistent_steps=0 val_acc(free-running)=0.9991 (267s)
+[ep  9] explore=0.36 loss=0.0153 inconsistent_steps=0 val_acc(free-running)=0.9996 (248s)
+[ep 10] explore=0.29 loss=0.0094 inconsistent_steps=0 val_acc(free-running)=0.9995 (263s)
+[ep 11] explore=0.21 loss=0.0073 inconsistent_steps=0 val_acc(free-running)=0.9995 (274s)
+[ep 12] explore=0.14 loss=0.0051 inconsistent_steps=0 val_acc(free-running)=0.9998 (277s)
+[ep 13] explore=0.07 loss=0.0043 inconsistent_steps=0 val_acc(free-running)=0.9998 (276s)
+[ep 14] explore=0.00 loss=0.0033 inconsistent_steps=0 val_acc(free-running)=0.9998 (264s)
+[TEST on fresh set] acc=0.9999 (base-rate acc=0.5486)
+[done] best_val_acc=0.9998 -> runs/sim_plru_capC_s2/hit_summary.json

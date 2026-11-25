@@ -1,0 +1,8 @@
+\section{Introduction}
+\label{sec:introduction}
+
+In this project, we investigate whether neural sequence models can learn and identify cache replacement policies using memory-access histories and observed eviction outcomes. Our goal is to develop a method for characterizing cache behavior without requiring knowledge of the processor's internal replacement implementation.
+
+We first implemented software simulators for several known replacement policies. These simulators provide controlled training and testing data for a GRU neural model. After validating our approach in simulation, we will collect eviction measurements from a local Intel Celeron N3450, whose L2 is its last-level cache, and eventually apply the same methodology to the L2 or if time permits the Last-Level Cache (LLC) of an LRC machine.
+
+We will evaluate the models based on their ability to predict eviction victims for previously unseen memory-access sequences. We will also compare their predictions and hardware observations against known replacement policies to determine which policy most closely matches the target processor. Ultimately, this project aims to evaluate the feasibility of using machine learning to characterize undocumented cache replacement behavior and support more accurate hardware security analysis.

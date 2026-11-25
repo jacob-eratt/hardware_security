@@ -1,0 +1,18 @@
+\begin{abstract}
+Cache replacement policies influence processor performance
+and hardware security, but their implementations in commercial
+processors are often undocumented. In this project, we
+investigate whether neural sequence models can learn cache
+replacement behavior from memory-access histories and eviction
+outcomes. We implemented cache simulators and trained a Gated
+Recurrent Unit (GRU) model to predict eviction victims under
+tree-based pseudo-LRU (PLRU). Our initial experiments achieved
+at least 99.988\% test accuracy across 4-, 8-, and 16-way
+simulated caches. On histories that include misses, it
+reached 96.1\% on the adaptive DRRIP policy and 73.6\% on
+PLRU, with accuracy decreasing as misses increased.
+Future work will evaluate generalization and extend the
+approach to real Intel processors, starting with the L2
+cache of an Intel Celeron N3450, to characterize undocumented
+replacement policies.
+\end{abstract}

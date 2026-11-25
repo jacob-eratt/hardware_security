@@ -1,0 +1,319 @@
+{
+  "generator": "cpl.data.hw_measure",
+  "code_version": "0.1.0",
+  "code_hash": "98d16963eb05",
+  "created_utc": "2026-11-20T02:06:15+00:00",
+  "seed": 1234,
+  "scale": 0.1,
+  "source": "hw",
+  "config": {
+    "seed": 1234,
+    "target": "hw_l2_celeron_W16",
+    "policy": "unknown",
+    "W": 16,
+    "data": {
+      "out_dir": "data/processed/hw_l2_celeron_W16",
+      "sizes": {
+        "train": 20000,
+        "val": 2000,
+        "test": 2000,
+        "test_long": 2000,
+        "test_xlong": 1000
+      },
+      "len_ranges": {
+        "train": [
+          0,
+          32
+        ],
+        "test_long": [
+          33,
+          128
+        ],
+        "test_xlong": [
+          129,
+          512
+        ]
+      },
+      "pool_range": null
+    },
+    "hw": {
+      "core": 0,
+      "repeats": 16,
+      "pool": 16,
+      "buf_mb": 256,
+      "cache_level": 2,
+      "threshold": null,
+      "l1_fill": 0,
+      "min_detect": 0.6,
+      "force": false,
+      "sim": false,
+      "run_id": "run0",
+      "verbose": true
+    },
+    "model": {
+      "d_emb": 32,
+      "hidden": 128,
+      "layers": 2,
+      "dropout": 0.0
+    },
+    "train": {
+      "batch_size": 512,
+      "lr": 0.001,
+      "weight_decay": 0.01,
+      "warmup_steps": 500,
+      "max_epochs": 20,
+      "grad_clip": 1.0,
+      "eval_every": 2000,
+      "curriculum": {
+        "start_len": 8,
+        "step": 8,
+        "max_len": 32
+      },
+      "early_stop_acc": 0.999
+    },
+    "noise": null
+  },
+  "W": 16,
+  "target": "hw_l2_celeron_W16",
+  "policy": "unknown",
+  "n_samples": 2700,
+  "counts_per_split": {
+    "train": 2000,
+    "val": 200,
+    "test": 200,
+    "test_long": 200,
+    "test_xlong": 100
+  },
+  "splits": {
+    "train": {
+      "requested": 2000,
+      "generated": 2000,
+      "candidates_drawn": 8192,
+      "L_range": [
+        0,
+        32
+      ],
+      "seconds": 0.24,
+      "n": 2000,
+      "n_labeled": 2000,
+      "frac_undetected": 0.0,
+      "mean_valid_repeats": 15.95,
+      "mean_label_consistency": 0.8886,
+      "hist_len": {
+        "min": 0,
+        "max": 32,
+        "mean": 16.17
+      },
+      "victim_frac": [
+        0.4315,
+        0.206,
+        0.109,
+        0.064,
+        0.047,
+        0.027,
+        0.0185,
+        0.013,
+        0.012,
+        0.0205,
+        0.024,
+        0.008,
+        0.005,
+        0.008,
+        0.0035,
+        0.003
+      ],
+      "majority_class_acc": 0.4315,
+      "agreement_with_label": {
+        "plru": 0.22,
+        "lru": 0.952,
+        "fifo": 0.4315,
+        "srrip": 0.951
+      }
+    },
+    "val": {
+      "requested": 200,
+      "generated": 200,
+      "candidates_drawn": 8192,
+      "L_range": [
+        0,
+        32
+      ],
+      "seconds": 0.21,
+      "n": 200,
+      "n_labeled": 200,
+      "frac_undetected": 0.0,
+      "mean_valid_repeats": 15.94,
+      "mean_label_consistency": 0.8937,
+      "hist_len": {
+        "min": 2,
+        "max": 32,
+        "mean": 16.18
+      },
+      "victim_frac": [
+        0.465,
+        0.17,
+        0.12,
+        0.06,
+        0.065,
+        0.035,
+        0.01,
+        0.005,
+        0.005,
+        0.01,
+        0.03,
+        0.005,
+        0.005,
+        0.01,
+        0.0,
+        0.005
+      ],
+      "majority_class_acc": 0.465,
+      "agreement_with_label": {
+        "plru": 0.2,
+        "lru": 0.955,
+        "fifo": 0.465,
+        "srrip": 0.955
+      }
+    },
+    "test": {
+      "requested": 200,
+      "generated": 200,
+      "candidates_drawn": 8192,
+      "L_range": [
+        0,
+        32
+      ],
+      "seconds": 0.21,
+      "n": 200,
+      "n_labeled": 200,
+      "frac_undetected": 0.0,
+      "mean_valid_repeats": 15.96,
+      "mean_label_consistency": 0.8993,
+      "hist_len": {
+        "min": 1,
+        "max": 32,
+        "mean": 17.7
+      },
+      "victim_frac": [
+        0.42,
+        0.16,
+        0.135,
+        0.06,
+        0.045,
+        0.065,
+        0.015,
+        0.005,
+        0.03,
+        0.02,
+        0.03,
+        0.0,
+        0.005,
+        0.005,
+        0.0,
+        0.005
+      ],
+      "majority_class_acc": 0.42,
+      "agreement_with_label": {
+        "plru": 0.225,
+        "lru": 0.94,
+        "fifo": 0.42,
+        "srrip": 0.945
+      }
+    },
+    "test_long": {
+      "requested": 200,
+      "generated": 200,
+      "candidates_drawn": 8192,
+      "L_range": [
+        33,
+        128
+      ],
+      "seconds": 0.6,
+      "n": 200,
+      "n_labeled": 200,
+      "frac_undetected": 0.0,
+      "mean_valid_repeats": 15.62,
+      "mean_label_consistency": 0.7391,
+      "hist_len": {
+        "min": 33,
+        "max": 128,
+        "mean": 80.39
+      },
+      "victim_frac": [
+        0.23,
+        0.075,
+        0.105,
+        0.035,
+        0.075,
+        0.07,
+        0.015,
+        0.035,
+        0.045,
+        0.04,
+        0.075,
+        0.02,
+        0.065,
+        0.03,
+        0.04,
+        0.045
+      ],
+      "majority_class_acc": 0.23,
+      "agreement_with_label": {
+        "plru": 0.2,
+        "lru": 0.59,
+        "fifo": 0.23,
+        "srrip": 0.425
+      }
+    },
+    "test_xlong": {
+      "requested": 100,
+      "generated": 100,
+      "candidates_drawn": 8192,
+      "L_range": [
+        129,
+        512
+      ],
+      "seconds": 1.99,
+      "n": 100,
+      "n_labeled": 100,
+      "frac_undetected": 0.0,
+      "mean_valid_repeats": 15.3,
+      "mean_label_consistency": 0.7585,
+      "hist_len": {
+        "min": 133,
+        "max": 507,
+        "mean": 314.12
+      },
+      "victim_frac": [
+        0.3,
+        0.26,
+        0.11,
+        0.03,
+        0.06,
+        0.02,
+        0.03,
+        0.01,
+        0.05,
+        0.03,
+        0.01,
+        0.02,
+        0.02,
+        0.04,
+        0.01,
+        0.0
+      ],
+      "majority_class_acc": 0.3,
+      "agreement_with_label": {
+        "plru": 0.18,
+        "lru": 0.49,
+        "fifo": 0.3,
+        "srrip": 0.3
+      }
+    }
+  },
+  "timing_seconds": {
+    "histories": 3.25,
+    "measurement": 1.08,
+    "total": 6.01
+  }
+}

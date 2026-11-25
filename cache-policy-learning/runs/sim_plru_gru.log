@@ -1,0 +1,31 @@
+[hit] params=618,785 train_streams=95,034 train_access=6,082,267 device=cpu
+/Users/dhwanitkumawat/School/fall 2026/hardware_security/cache-policy-learning/src/cpl/train_hits.py:136: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /Users/runner/work/pytorch/pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:821.)
+  print(f"[ep {ep:>2}] loss={float(loss):.4f} {tag}_acc={ev['acc']:.4f} {tag}_logloss={ev['logloss']:.4f}", flush=True)
+[ep  0] loss=0.1576 val_acc=0.9366 val_logloss=0.1452
+[ep  1] loss=0.1397 val_acc=0.9385 val_logloss=0.1352
+[ep  2] loss=0.1296 val_acc=0.9386 val_logloss=0.1339
+[ep  3] loss=0.1294 val_acc=0.9385 val_logloss=0.1353
+[ep  4] loss=0.1200 val_acc=0.9393 val_logloss=0.1321
+[ep  5] loss=0.1287 val_acc=0.9393 val_logloss=0.1314
+[ep  6] loss=0.1288 val_acc=0.9399 val_logloss=0.1313
+[ep  7] loss=0.1192 val_acc=0.9394 val_logloss=0.1309
+[ep  8] loss=0.1229 val_acc=0.9401 val_logloss=0.1310
+[ep  9] loss=0.1366 val_acc=0.9396 val_logloss=0.1306
+[ep 10] loss=0.1221 val_acc=0.9403 val_logloss=0.1303
+[ep 11] loss=0.1301 val_acc=0.9392 val_logloss=0.1316
+[ep 12] loss=0.1340 val_acc=0.9394 val_logloss=0.1310
+[ep 13] loss=0.1335 val_acc=0.9391 val_logloss=0.1318
+[ep 14] loss=0.1171 val_acc=0.9396 val_logloss=0.1308
+[ep 15] loss=0.1231 val_acc=0.9393 val_logloss=0.1308
+[ep 16] loss=0.1291 val_acc=0.9395 val_logloss=0.1317
+[ep 17] loss=0.1032 val_acc=0.9391 val_logloss=0.1325
+[ep 18] loss=0.1198 val_acc=0.9390 val_logloss=0.1324
+[ep 19] loss=0.1362 val_acc=0.9384 val_logloss=0.1335
+[ep 20] loss=0.1209 val_acc=0.9377 val_logloss=0.1336
+[ep 21] loss=0.1321 val_acc=0.9384 val_logloss=0.1339
+[ep 22] loss=0.1276 val_acc=0.9385 val_logloss=0.1347
+[ep 23] loss=0.1075 val_acc=0.9385 val_logloss=0.1380
+[ep 24] loss=0.1192 val_acc=0.9377 val_logloss=0.1354
+[TEST on fresh set] acc=0.9407 logloss=0.1287 (base-rate acc=0.5486)
+[done] best_val_acc=0.9403  summary -> runs/sim_plru_gru/hit_summary.json

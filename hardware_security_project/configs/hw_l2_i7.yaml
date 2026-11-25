@@ -1,0 +1,28 @@
+# Hit/miss stream dataset for the L2 of this dev machine: Intel Core i7-13700H
+# (Raptor Lake). P-core L2 = 2 MiB, 16-way; the part has an L3, so an L2 miss
+# hits L3 (fast-ish) rather than DRAM -> narrower hit/miss timing gap than the
+# Celeron. Busy/hyperthreaded Windows box, no huge pages -> expect lower
+# per-access consistency; this config just tries it.
+seed: 1234
+target: hw_l2_i7_W16
+policy: unknown
+W: 16
+data:
+  out_dir: runs/i7_stream
+  pool_range: null
+hw:
+  core: 2                  # a logical core to pin to (try E-cores 12-19 if P-cores are noisy)
+  repeats: 32
+  pool: 24
+  buf_mb: 256              # large pages are dense, so 256 MB is plenty; smaller => alloc succeeds
+                           # even when RAM is a bit fragmented (err 1450 => reboot or lower further)
+  cache_level: 2
+  threshold: 175           # manual: between L2-hit (~146-162) and L3 (~180+); auto picks the
+                           # DRAM boundary (~308) which can't see L2->L3 evictions. Try 165-220.
+  min_detect: 0.6
+  force: true              # proceed with best-effort pool (finder is harder here)
+  run_id: i7_run0
+  verbose: true
+model: {d_emb: 32, hidden: 128, layers: 2, dropout: 0.0}
+train: {batch_size: 256, lr: 1.0e-3, max_epochs: 20}
+noise: null

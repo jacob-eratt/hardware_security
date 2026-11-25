@@ -1,0 +1,7 @@
+numpy
+pandas
+pyarrow
+pyyaml
+torch>=2.0
+matplotlib
+pytest
