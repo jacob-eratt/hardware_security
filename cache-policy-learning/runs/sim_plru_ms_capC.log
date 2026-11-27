@@ -1,0 +1,14 @@
+[hindsight] params=51,073 train_streams=37,973 train_access=6,072,695 sets/stream<=4 set_id=e(a) over 1024 sets global=on
+C:\Users\henry\Documents\hardware_security\cache-policy-learning\src\cpl\train_hindsight.py:281: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\torch\csrc\autograd\generated\python_variable_methods.cpp:821.)
+  incons += ch.n_incons; decs += ch.n_dec; tot += float(loss) * ch.n_dec
+[ep  0] explore=1.00 loss=0.8396 inconsistent_steps=0 val_acc(free-running)=0.9403 (1289s)
+[ep  1] explore=0.93 loss=0.6914 inconsistent_steps=0 val_acc(free-running)=0.9443 (757s)
+[ep  2] explore=0.86 loss=0.6608 inconsistent_steps=0 val_acc(free-running)=0.9475 (652s)
+[ep  3] explore=0.79 loss=0.6364 inconsistent_steps=0 val_acc(free-running)=0.9494 (657s)
+[ep  4] explore=0.71 loss=0.6130 inconsistent_steps=0 val_acc(free-running)=0.9514 (649s)
+[ep  5] explore=0.64 loss=0.5845 inconsistent_steps=0 val_acc(free-running)=0.9541 (654s)
+[ep  6] explore=0.57 loss=0.5458 inconsistent_steps=0 val_acc(free-running)=0.9582 (656s)
+[ep  7] explore=0.50 loss=0.4978 inconsistent_steps=0 val_acc(free-running)=0.9626 (656s)
+[ep  8] explore=0.43 loss=0.4406 inconsistent_steps=0 val_acc(free-running)=0.9670 (660s)
+[ep  9] explore=0.36 loss=0.3607 inconsistent_steps=0 val_acc(free-running)=0.9770 (650s)

@@ -23,7 +23,24 @@ from cpl.model.hit_gru import NUM_BLOCKS, build_hit_model
 from cpl.utils.seed import set_seed
 
 
-def load_streams(data_dir: str | Path, split: str | None = None):
+def data_geometry(data_dir: str | Path) -> dict:
+    """Line-id range, local set slots and global set count of a stream dataset.
+
+    Single-set data (no ``sets`` column): ids < NUM_BLOCKS, one slot, no set ids, which
+    keeps every single-set model and checkpoint exactly as before. Multi-set data
+    (cpl.data.sim_multiset_dataset): ids < pool * sets_max, sets_max local slots, S
+    global sets. ``num_blocks`` is also the padding id."""
+    meta = json.loads((Path(data_dir) / "meta.json").read_text())
+    if "sets_range" not in meta:
+        return {"num_blocks": NUM_BLOCKS, "s_max": 1, "n_set_ids": 0}
+    return {"num_blocks": int(meta["pool"]) * int(meta["sets_range"][1]),
+            "s_max": int(meta["sets_range"][1]), "n_set_ids": int(meta["S"])}
+
+
+def load_streams(data_dir: str | Path, split: str | None = None, num_blocks: int = NUM_BLOCKS):
+    """Padded arrays A (line ids, pad = num_blocks), P (p_hit), M (mask), lens; for
+    multi-set data also Sl (local set slot, by order of first touch) and G (global set
+    index). Single-set data gets no Sl/G."""
     df = pd.read_parquet(Path(data_dir) / "samples.parquet")
     if split is not None:
         df = df[df["split"] == split].reset_index(drop=True)
@@ -34,17 +51,37 @@ def load_streams(data_dir: str | Path, split: str | None = None):
     lens = np.fromiter((len(a) for a in acc), np.int64, len(acc))
     T = int(lens.max())
     n = len(acc)
-    A = np.full((n, T), NUM_BLOCKS, np.int64)   # pad id
+    if max(int(a.max()) for a in acc) >= num_blocks:
+        raise ValueError(f"line ids reach {max(int(a.max()) for a in acc)} but num_blocks={num_blocks}")
+    A = np.full((n, T), num_blocks, np.int64)   # pad id
     P = np.zeros((n, T), np.float32)
     M = np.zeros((n, T), np.float32)            # valid-position mask
     for i, (a, p) in enumerate(zip(acc, ph)):
         A[i, : len(a)] = a
         P[i, : len(p)] = p
         M[i, : len(a)] = 1.0
-    return {"A": A, "P": P, "M": M, "lens": lens}
+    out = {"A": A, "P": P, "M": M, "lens": lens}
+    if "sets" in df.columns:
+        Sl = np.zeros((n, T), np.int64); G = np.zeros((n, T), np.int64)
+        for i, s in enumerate(df["sets"]):
+            s = np.asarray(s, np.int64)
+            _, first = np.unique(s, return_index=True)
+            order = {int(v): k for k, v in enumerate(s[np.sort(first)])}   # slot = order of first touch
+            Sl[i, : len(s)] = [order[int(v)] for v in s]
+            G[i, : len(s)] = s
+        out["Sl"], out["G"] = Sl, G
+    return out
+
+
+def batch_sets(data, j, T) -> dict:
+    """Model keyword arguments carrying set information for rows ``j`` (empty if single-set)."""
+    if "Sl" not in data:
+        return {}
+    return {"sets": torch.from_numpy(data["Sl"][j, :T]), "set_ids": torch.from_numpy(data["G"][j, :T])}
 
 
 def iterate(data, bs, shuffle, rng):
+    """Yields (A, P, M, kw); ``kw`` holds the set tensors for multi-set data, else {}."""
     idx = np.arange(len(data["lens"]))
     if shuffle:
         idx = rng.permutation(idx)
@@ -52,7 +89,7 @@ def iterate(data, bs, shuffle, rng):
         j = idx[s : s + bs]
         T = int(data["lens"][j].max())
         yield (torch.from_numpy(data["A"][j, :T]), torch.from_numpy(data["P"][j, :T]),
-               torch.from_numpy(data["M"][j, :T]))
+               torch.from_numpy(data["M"][j, :T]), batch_sets(data, j, T))
 
 
 @torch.no_grad()
@@ -60,9 +97,9 @@ def evaluate(model, data, device, bs=1024):
     model.eval()
     tot_m = correct = 0.0
     ll = 0.0
-    for A, P, M in iterate(data, bs, False, None):
+    for A, P, M, kw in iterate(data, bs, False, None):
         A, P, M = A.to(device), P.to(device), M.to(device)
-        logits = model(A)
+        logits = model(A, **{k: v.to(device) for k, v in kw.items()})
         prob = torch.sigmoid(logits)
         pred_hit = (prob > 0.5).float()
         meas_hit = (P > 0.5).float()
@@ -106,11 +143,14 @@ def main(argv=None):
     rng = np.random.default_rng(args.seed)
     run_dir = Path(args.run_dir); run_dir.mkdir(parents=True, exist_ok=True)
 
-    train = load_streams(args.data_dir, "train")
-    val = load_streams(args.data_dir, "val")
+    geo = data_geometry(args.data_dir)
+    args.num_blocks, args.n_set_ids = geo["num_blocks"], geo["n_set_ids"]
+    train = load_streams(args.data_dir, "train", geo["num_blocks"])
+    val = load_streams(args.data_dir, "val", geo["num_blocks"])
     if train is None:
         raise SystemExit("no 'train' split in --data-dir")
-    model = build_hit_model({"hidden": args.hidden, "layers": args.layers}).to(device)
+    model = build_hit_model({"hidden": args.hidden, "layers": args.layers,
+                             "num_blocks": args.num_blocks, "n_set_ids": args.n_set_ids}).to(device)
     opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.01)
     bce = torch.nn.BCEWithLogitsLoss(reduction="none")
     n_params = sum(p.numel() for p in model.parameters())
@@ -125,9 +165,9 @@ def main(argv=None):
         print(f"[eval-only] loaded {ckpt}  val_acc={best['acc']:.4f} logloss={best['logloss']:.4f}")
     else:
         for ep in range(args.epochs):
-            for A, P, M in iterate(train, args.batch_size, True, rng):
+            for A, P, M, kw in iterate(train, args.batch_size, True, rng):
                 A, P, M = A.to(device), P.to(device), M.to(device)
-                logits = model(A)
+                logits = model(A, **{k: v.to(device) for k, v in kw.items()})
                 loss = (bce(logits, P) * M).sum() / M.sum().clamp_min(1)
                 opt.zero_grad(set_to_none=True); loss.backward()
                 torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0); opt.step()
@@ -143,7 +183,7 @@ def main(argv=None):
     if args.test_dir:
         if not args.eval_only:
             model.load_state_dict(torch.load(run_dir / "best.pt", map_location=device)["model"])
-        test = load_streams(args.test_dir, None)   # whole fresh set
+        test = load_streams(args.test_dir, None, geo["num_blocks"])   # whole fresh set
         te = evaluate(model, test, device)
         summary["independent_test"] = te
         summary["base_rate_test"] = base_rate_baseline(train, test)

@@ -1,0 +1,78 @@
+{
+  "test_dir": "../hardware_security_project/data/processed/sim_plru_stream_test_len4x",
+  "meta": {
+    "generator": "cpl.data.sim_stream_dataset",
+    "code_version": "0.1.0",
+    "created_utc": "2026-11-25T14:28:32+00:00",
+    "source": "sim",
+    "policy": "plru",
+    "W": 16,
+    "pool": 24,
+    "n": 8000,
+    "len_range": [
+      128,
+      384
+    ],
+    "seed": 4,
+    "all_test": true,
+    "start_state": "empty",
+    "state_dim": 15,
+    "splits": {
+      "test": 8000
+    },
+    "overall_hit_rate": 0.6369,
+    "seconds": 18.62
+  },
+  "results": {
+    "tree-PLRU (truth check)": {
+      "acc_all": 1.0,
+      "acc_non_first": 1.0,
+      "acc_rd_0_7": 1.0,
+      "acc_rd_8_15": 1.0,
+      "acc_rd_16_plus": 1.0,
+      "exact_stream": 1.0,
+      "contents_acc": 1.0,
+      "contents_exact_stream": 1.0
+    },
+    "LRU": {
+      "acc_all": 0.903907603689663,
+      "acc_non_first": 0.8940086131017042,
+      "acc_rd_0_7": 0.9990800230814306,
+      "acc_rd_8_15": 0.8461116724233809,
+      "acc_rd_16_plus": 0.8220223981059417,
+      "exact_stream": 0.0,
+      "contents_acc": 0.20054234563269682,
+      "contents_exact_stream": 0.0
+    },
+    "FIFO": {
+      "acc_all": 0.8121618550887114,
+      "acc_non_first": 0.792811645291347,
+      "acc_rd_0_7": 0.9492775124539825,
+      "acc_rd_8_15": 0.7147833987327397,
+      "acc_rd_16_plus": 0.6933361484352725,
+      "exact_stream": 0.0,
+      "contents_acc": 0.11290725189001079,
+      "contents_exact_stream": 0.0
+    },
+    "random replacement": {
+      "acc_all": 0.7689065551028711,
+      "acc_non_first": 0.7451003860009188,
+      "acc_rd_0_7": 0.9265479692665085,
+      "acc_rd_8_15": 0.6778835133448728,
+      "acc_rd_16_plus": 0.6029358866548528,
+      "exact_stream": 0.0,
+      "contents_acc": 0.10875053382231702,
+      "contents_exact_stream": 0.0
+    },
+    "three-unit model": {
+      "acc_all": 0.9993134311073611,
+      "acc_non_first": 0.99924270398152,
+      "acc_rd_0_7": 0.9999940358060384,
+      "acc_rd_8_15": 0.9989175810835155,
+      "acc_rd_16_plus": 0.998707940392021,
+      "exact_stream": 0.985625,
+      "contents_acc": 0.9942879998365081,
+      "contents_exact_stream": 0.98225
+    }
+  }
+}

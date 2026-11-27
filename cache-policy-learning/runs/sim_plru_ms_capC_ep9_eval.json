@@ -1,0 +1,89 @@
+{
+  "test_dir": "../hardware_security_project/data/processed/sim_plru_ms_test",
+  "meta": {
+    "generator": "cpl.data.sim_multiset_dataset",
+    "code_version": "0.1.0",
+    "created_utc": "2026-11-25T20:19:06+00:00",
+    "source": "sim",
+    "policy": "plru",
+    "S": 1024,
+    "W": 16,
+    "pool": 24,
+    "n": 8000,
+    "sets_range": [
+      1,
+      4
+    ],
+    "len_range_per_set": [
+      32,
+      96
+    ],
+    "seed": 2,
+    "all_test": true,
+    "start_state": "empty",
+    "state_dim": 15,
+    "max_line_id": 95,
+    "splits": {
+      "test": 8000
+    },
+    "overall_hit_rate": 0.5487,
+    "access_share_by_role": {
+      "follower": 1.0,
+      "srrip_leader": 0.0,
+      "brrip_leader": 0.0
+    },
+    "seconds": 14.9
+  },
+  "results": {
+    "tree-PLRU (truth check)": {
+      "acc_all": 1.0,
+      "acc_non_first": 1.0,
+      "acc_rd_0_7": 1.0,
+      "acc_rd_8_15": 1.0,
+      "acc_rd_16_plus": 1.0,
+      "exact_stream": 1.0,
+      "contents_acc": 1.0,
+      "contents_exact_stream": 1.0
+    },
+    "LRU": {
+      "acc_all": 0.9382320839981423,
+      "acc_non_first": 0.9062381173936558,
+      "acc_rd_0_7": 0.999272035510463,
+      "acc_rd_8_15": 0.8730060344855272,
+      "acc_rd_16_plus": 0.7197572220766436,
+      "exact_stream": 0.02925,
+      "contents_acc": 0.4814210043587611,
+      "contents_exact_stream": 0.00475
+    },
+    "FIFO": {
+      "acc_all": 0.8919738272069777,
+      "acc_non_first": 0.8360194420105193,
+      "acc_rd_0_7": 0.9672136968928345,
+      "acc_rd_8_15": 0.7790138642224699,
+      "acc_rd_16_plus": 0.595414981692505,
+      "exact_stream": 0.020125,
+      "contents_acc": 0.43467342742697734,
+      "contents_exact_stream": 0.00325
+    },
+    "random replacement": {
+      "acc_all": 0.8737515140529788,
+      "acc_non_first": 0.8083585057615141,
+      "acc_rd_0_7": 0.9516804058338617,
+      "acc_rd_8_15": 0.7563264681292025,
+      "acc_rd_16_plus": 0.5229239111702869,
+      "exact_stream": 0.019916666666666666,
+      "contents_acc": 0.43127178375732006,
+      "contents_exact_stream": 0.0030833333333333338
+    },
+    "three-unit model": {
+      "acc_all": 0.9766052073309337,
+      "acc_non_first": 0.9644873917428137,
+      "acc_rd_0_7": 0.9995764109067851,
+      "acc_rd_8_15": 0.9488337288881324,
+      "acc_rd_16_plus": 0.9010332934369224,
+      "exact_stream": 0.227875,
+      "contents_acc": 0.765697335655724,
+      "contents_exact_stream": 0.105
+    }
+  }
+}

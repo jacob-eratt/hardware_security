@@ -29,7 +29,7 @@ import pandas as pd
 import torch
 
 from cpl.eval_sim import model_predict
-from cpl.model.slot_cache import build_slot_model
+from cpl.model.slot_cache import slot_from_ckpt
 
 
 def main(argv=None):
@@ -50,9 +50,9 @@ def main(argv=None):
     tev = [np.asarray(e) for e in df["evicted"]]
 
     ck = torch.load(a.slot, map_location="cpu", weights_only=False)
-    m = build_slot_model({"d_way": ck["args"]["d_way"], "d_glob": ck["args"]["d_glob"],
-                          "use_ages": ck["args"].get("use_ages", False)})
-    m.load_state_dict(ck["model"])
+    if "sets_range" in meta:
+        raise SystemExit("analyze_sim is single-set only (tree-level diagnostics)")
+    m = slot_from_ckpt(ck)
     _, mc = model_predict(m, acc, contents=True)
 
     by_idx = {}                                   # eviction index -> [correct, total]

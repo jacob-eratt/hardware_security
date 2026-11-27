@@ -1,0 +1,21 @@
+[hindsight] params=51,073 train_streams=37,973 train_access=6,071,343 sets/stream<=4 set_id=e(a) over 1024 sets global=on
+C:\Users\henry\Documents\hardware_security\cache-policy-learning\src\cpl\train_hindsight.py:281: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\torch\csrc\autograd\generated\python_variable_methods.cpp:821.)
+  incons += ch.n_incons; decs += ch.n_dec; tot += float(loss) * ch.n_dec
+[ep  0] explore=1.00 loss=0.9360 inconsistent_steps=0 val_acc(free-running)=0.9251 (795s)
+[ep  1] explore=0.93 loss=0.5336 inconsistent_steps=0 val_acc(free-running)=0.9277 (922s)
+[ep  2] explore=0.86 loss=0.4418 inconsistent_steps=0 val_acc(free-running)=0.9303 (787s)
+[ep  3] explore=0.79 loss=0.3913 inconsistent_steps=0 val_acc(free-running)=0.9325 (658s)
+[ep  4] explore=0.71 loss=0.3646 inconsistent_steps=0 val_acc(free-running)=0.9319 (662s)
+[ep  5] explore=0.64 loss=0.3320 inconsistent_steps=0 val_acc(free-running)=0.9345 (655s)
+[ep  6] explore=0.57 loss=0.3080 inconsistent_steps=0 val_acc(free-running)=0.9340 (659s)
+[ep  7] explore=0.50 loss=0.2872 inconsistent_steps=0 val_acc(free-running)=0.9360 (667s)
+[ep  8] explore=0.43 loss=0.2704 inconsistent_steps=0 val_acc(free-running)=0.9366 (647s)
+[ep  9] explore=0.36 loss=0.2561 inconsistent_steps=0 val_acc(free-running)=0.9375 (1298s)
+[ep 10] explore=0.29 loss=0.2446 inconsistent_steps=0 val_acc(free-running)=0.9380 (654s)
+[ep 11] explore=0.21 loss=0.2303 inconsistent_steps=0 val_acc(free-running)=0.9389 (1473s)
+[ep 12] explore=0.14 loss=0.2209 inconsistent_steps=0 val_acc(free-running)=0.9379 (666s)
+[ep 13] explore=0.07 loss=0.2114 inconsistent_steps=0 val_acc(free-running)=0.9376 (679s)
+[ep 14] explore=0.00 loss=0.1986 inconsistent_steps=0 val_acc(free-running)=0.9387 (655s)
+[TEST on fresh set] acc=0.9363 (base-rate acc=0.5487)
+[done] best_val_acc=0.9389 -> runs\sim_drrip_ms_capC\hit_summary.json

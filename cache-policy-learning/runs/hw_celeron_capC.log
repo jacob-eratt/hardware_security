@@ -1,0 +1,21 @@
+[hindsight] params=30,593 train_streams=90,085 train_access=5,754,718
+C:\Users\henry\Documents\hardware_security\cache-policy-learning\src\cpl\train_hindsight.py:257: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\torch\csrc\autograd\generated\python_variable_methods.cpp:821.)
+  incons += ch.n_incons; decs += ch.n_dec; tot += float(loss) * ch.n_dec
+[ep  0] explore=1.00 loss=0.4847 inconsistent_steps=57 val_acc(free-running)=0.9740 (848s)
+[ep  1] explore=0.93 loss=0.3316 inconsistent_steps=53 val_acc(free-running)=0.9759 (673s)
+[ep  2] explore=0.86 loss=0.3066 inconsistent_steps=53 val_acc(free-running)=0.9776 (563s)
+[ep  3] explore=0.79 loss=0.2920 inconsistent_steps=54 val_acc(free-running)=0.9781 (570s)
+[ep  4] explore=0.71 loss=0.2821 inconsistent_steps=53 val_acc(free-running)=0.9779 (637s)
+[ep  5] explore=0.64 loss=0.2746 inconsistent_steps=53 val_acc(free-running)=0.9784 (567s)
+[ep  6] explore=0.57 loss=0.2697 inconsistent_steps=54 val_acc(free-running)=0.9783 (553s)
+[ep  7] explore=0.50 loss=0.2651 inconsistent_steps=53 val_acc(free-running)=0.9786 (561s)
+[ep  8] explore=0.43 loss=0.2612 inconsistent_steps=53 val_acc(free-running)=0.9784 (557s)
+[ep  9] explore=0.36 loss=0.2582 inconsistent_steps=53 val_acc(free-running)=0.9779 (549s)
+[ep 10] explore=0.29 loss=0.2560 inconsistent_steps=53 val_acc(free-running)=0.9790 (553s)
+[ep 11] explore=0.21 loss=0.2531 inconsistent_steps=53 val_acc(free-running)=0.9791 (551s)
+[ep 12] explore=0.14 loss=0.2506 inconsistent_steps=53 val_acc(free-running)=0.9793 (547s)
+[ep 13] explore=0.07 loss=0.2486 inconsistent_steps=53 val_acc(free-running)=0.9792 (547s)
+[ep 14] explore=0.00 loss=0.2469 inconsistent_steps=53 val_acc(free-running)=0.9783 (539s)
+[TEST on fresh set] acc=0.9795 (base-rate acc=0.5483)
+[done] best_val_acc=0.9793 -> runs\hw_celeron_capC\hit_summary.json

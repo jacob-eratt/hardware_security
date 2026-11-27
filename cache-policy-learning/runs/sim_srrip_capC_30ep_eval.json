@@ -1,0 +1,68 @@
+{
+  "test_dir": "../hardware_security_project/data/processed/sim_srrip_stream_test",
+  "meta": {
+    "generator": "cpl.data.sim_stream_dataset",
+    "code_version": "0.1.0",
+    "created_utc": "2026-11-25T14:28:20+00:00",
+    "source": "sim",
+    "policy": "srrip",
+    "W": 16,
+    "pool": 24,
+    "n": 8000,
+    "len_range": [
+      32,
+      96
+    ],
+    "seed": 2,
+    "all_test": true,
+    "start_state": "empty",
+    "state_dim": 16,
+    "splits": {
+      "test": 8000
+    },
+    "overall_hit_rate": 0.5487,
+    "seconds": 6.21
+  },
+  "results": {
+    "LRU": {
+      "acc_all": 0.9359712060790656,
+      "acc_non_first": 0.9025286504702381,
+      "acc_rd_0_7": 0.9936883477681973,
+      "acc_rd_8_15": 0.8759844595307038,
+      "acc_rd_16_plus": 0.7038794508639113,
+      "exact_stream": 0.2025,
+      "contents_acc": 0.5799741733915282,
+      "contents_exact_stream": 0.09
+    },
+    "FIFO": {
+      "acc_all": 0.8780929129902345,
+      "acc_non_first": 0.8144202387638771,
+      "acc_rd_0_7": 0.9617268065984291,
+      "acc_rd_8_15": 0.7642082552659967,
+      "acc_rd_16_plus": 0.5097620168797768,
+      "exact_stream": 0.08625,
+      "contents_acc": 0.45713881998304395,
+      "contents_exact_stream": 0.018375
+    },
+    "random replacement": {
+      "acc_all": 0.8709860164746025,
+      "acc_non_first": 0.8036013750632361,
+      "acc_rd_0_7": 0.9478915283458905,
+      "acc_rd_8_15": 0.7635783093115746,
+      "acc_rd_16_plus": 0.48472609603844435,
+      "exact_stream": 0.068875,
+      "contents_acc": 0.4344463371746161,
+      "contents_exact_stream": 0.012624999999999999
+    },
+    "three-unit model": {
+      "acc_all": 0.999974487392847,
+      "acc_non_first": 0.9999611620320025,
+      "acc_rd_0_7": 0.9999743949199521,
+      "acc_rd_8_15": 0.9999594455394148,
+      "acc_rd_16_plus": 0.9999275546057159,
+      "exact_stream": 0.9985,
+      "contents_acc": 0.9995074104311238,
+      "contents_exact_stream": 0.992
+    }
+  }
+}

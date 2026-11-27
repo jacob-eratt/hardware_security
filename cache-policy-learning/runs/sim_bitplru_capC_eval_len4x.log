@@ -1,0 +1,7 @@
+C:\Users\henry\Documents\hardware_security\cache-policy-learning\src\cpl\eval_sim.py:127: UserWarning: The given NumPy array is not writable, and PyTorch does not support non-writable tensors. This means writing to this tensor will result in undefined behavior. You may want to copy the array to protect its data or make it writable before converting it to a tensor. This type of warning will be suppressed for the rest of this program. (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\torch\csrc\utils\tensor_numpy.cpp:219.)
+  A[i, :len(a)] = torch.from_numpy(a)
+predictor                         acc_all  acc_non_first     acc_rd_0_7    acc_rd_8_15 acc_rd_16_plus   exact_stream   contents_acccontents_exact_stream
+LRU                                0.9148         0.9060         0.9944         0.8690         0.8418         0.0000         0.3086         0.0000
+FIFO                               0.8203         0.8017         0.9462         0.7326         0.7065         0.0000         0.1495         0.0000
+random replacement                 0.7711         0.7475         0.9233         0.6866         0.6049         0.0000         0.1089         0.0000
+three-unit model                   0.9996         0.9995         0.9999         0.9994         0.9993         0.9785         0.9957         0.9726

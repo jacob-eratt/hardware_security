@@ -1,0 +1,78 @@
+{
+  "test_dir": "../hardware_security_project/data/processed/sim_plru_stream_test_len2x",
+  "meta": {
+    "generator": "cpl.data.sim_stream_dataset",
+    "code_version": "0.1.0",
+    "created_utc": "2026-11-25T14:28:24+00:00",
+    "source": "sim",
+    "policy": "plru",
+    "W": 16,
+    "pool": 24,
+    "n": 8000,
+    "len_range": [
+      64,
+      192
+    ],
+    "seed": 3,
+    "all_test": true,
+    "start_state": "empty",
+    "state_dim": 15,
+    "splits": {
+      "test": 8000
+    },
+    "overall_hit_rate": 0.608,
+    "seconds": 10.69
+  },
+  "results": {
+    "tree-PLRU (truth check)": {
+      "acc_all": 1.0,
+      "acc_non_first": 1.0,
+      "acc_rd_0_7": 1.0,
+      "acc_rd_8_15": 1.0,
+      "acc_rd_16_plus": 1.0,
+      "exact_stream": 1.0,
+      "contents_acc": 1.0,
+      "contents_exact_stream": 1.0
+    },
+    "LRU": {
+      "acc_all": 0.9151830960659879,
+      "acc_non_first": 0.8959466875172609,
+      "acc_rd_0_7": 0.9991481879219132,
+      "acc_rd_8_15": 0.8535055588122676,
+      "acc_rd_16_plus": 0.7952953682754857,
+      "exact_stream": 0.001625,
+      "contents_acc": 0.29611900269751923,
+      "contents_exact_stream": 0.0
+    },
+    "FIFO": {
+      "acc_all": 0.8389713563999813,
+      "acc_non_first": 0.8024501839371517,
+      "acc_rd_0_7": 0.9543915475904365,
+      "acc_rd_8_15": 0.7331736226649092,
+      "acc_rd_16_plus": 0.6636907981693234,
+      "exact_stream": 0.0,
+      "contents_acc": 0.22087302948560023,
+      "contents_exact_stream": 0.0
+    },
+    "random replacement": {
+      "acc_all": 0.804487354404129,
+      "acc_non_first": 0.7601452368228189,
+      "acc_rd_0_7": 0.9343993153053392,
+      "acc_rd_8_15": 0.6994480155328225,
+      "acc_rd_16_plus": 0.5749776182703901,
+      "exact_stream": 0.0,
+      "contents_acc": 0.21687937567243076,
+      "contents_exact_stream": 0.0
+    },
+    "three-unit model": {
+      "acc_all": 0.9997612383640248,
+      "acc_non_first": 0.999707087408704,
+      "acc_rd_0_7": 0.9999969578140069,
+      "acc_rd_8_15": 0.9995357773357685,
+      "acc_rd_16_plus": 0.9994967050644641,
+      "exact_stream": 0.994875,
+      "contents_acc": 0.9978579670372507,
+      "contents_exact_stream": 0.993125
+    }
+  }
+}

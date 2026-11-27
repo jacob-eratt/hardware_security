@@ -1,0 +1,90 @@
+{
+  "test_dir": "../hardware_security_project/data/processed/sim_drrip_ms",
+  "split": "val",
+  "observed": false,
+  "meta": {
+    "generator": "cpl.data.sim_multiset_dataset",
+    "code_version": "0.1.0",
+    "created_utc": "2026-11-25T20:20:12+00:00",
+    "source": "sim",
+    "policy": "drrip",
+    "S": 1024,
+    "W": 16,
+    "pool": 24,
+    "n": 40000,
+    "sets_range": [
+      1,
+      4
+    ],
+    "len_range_per_set": [
+      32,
+      96
+    ],
+    "seed": 1,
+    "all_test": false,
+    "start_state": "empty",
+    "state_dim": 16,
+    "max_line_id": 95,
+    "splits": {
+      "train": 37973,
+      "val": 2027
+    },
+    "overall_hit_rate": 0.549,
+    "access_share_by_role": {
+      "follower": 0.9365,
+      "srrip_leader": 0.032,
+      "brrip_leader": 0.0314
+    },
+    "seconds": 81.29,
+    "drrip": {
+      "n_leaders": 32,
+      "psel_bits": 10,
+      "psel_init": "uniform",
+      "bimodal": "counter",
+      "leader_rule": "complement select",
+      "psel_rule": "SRRIP-leader miss +1, BRRIP-leader miss -1, followers BRRIP iff PSEL >= 2**(bits-1)"
+    }
+  },
+  "results": {
+    "LRU": {
+      "acc_all": 0.8916997313749169,
+      "acc_non_first": 0.8349359576306201,
+      "acc_rd_0_7": 0.9368039837030331,
+      "acc_rd_8_15": 0.8552685265466415,
+      "acc_rd_16_plus": 0.5014935563710847,
+      "exact_stream": 0.04440059200789344,
+      "contents_acc": 0.5290373857111171,
+      "contents_exact_stream": 0.01480019733596448
+    },
+    "FIFO": {
+      "acc_all": 0.8530140227222318,
+      "acc_non_first": 0.7759737820681366,
+      "acc_rd_0_7": 0.9079724359941653,
+      "acc_rd_8_15": 0.7396465548018565,
+      "acc_rd_16_plus": 0.48374157207476315,
+      "exact_stream": 0.023186975826344353,
+      "contents_acc": 0.45168753234591025,
+      "contents_exact_stream": 0.001973359644795264
+    },
+    "random replacement": {
+      "acc_all": 0.8558717582209955,
+      "acc_non_first": 0.7803293518135948,
+      "acc_rd_0_7": 0.9031369984742552,
+      "acc_rd_8_15": 0.7495367300793934,
+      "acc_rd_16_plus": 0.5017401117085337,
+      "exact_stream": 0.015951323795428383,
+      "contents_acc": 0.43251718954087287,
+      "contents_exact_stream": 0.000493339911198816
+    },
+    "three-unit model": {
+      "acc_all": 0.9388539073859575,
+      "acc_non_first": 0.9068052060248657,
+      "acc_rd_0_7": 0.9390171520547256,
+      "acc_rd_8_15": 0.9219283929208956,
+      "acc_rd_16_plus": 0.7819692185144093,
+      "exact_stream": 0.21904292057227429,
+      "contents_acc": 0.6900121990290066,
+      "contents_exact_stream": 0.1262950172668969
+    }
+  }
+}

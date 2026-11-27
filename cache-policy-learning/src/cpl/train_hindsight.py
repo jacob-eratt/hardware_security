@@ -19,6 +19,13 @@ an inconsistency (on simulated data the count MUST be 0).
 Evaluation is the real test and uses no labels: the model runs free (hard victims)
 and is scored on hit/miss exactly like cpl.train_hits.
 
+``--observed-train`` (for adaptive policies, see cpl.observed): train under the
+observed-outcome protocol. The model's OWN victim choice drives residency (the hindsight
+allowed set only defines the loss), and each access's true outcome then corrects
+residency exactly as at observed-outcome evaluation. So the model meets its own mistakes
+and the surprises that reveal hidden policy state. Model selection uses observed-outcome
+val accuracy. ``--init-from`` starts from a trained checkpoint of the same geometry.
+
     python -m cpl.train_hindsight --data-dir <stream dataset> --test-dir <independent set> \
         --epochs 15 --run-dir runs/hindsight
 """
@@ -34,7 +41,8 @@ import torch
 
 from cpl.model.hit_gru import NUM_BLOCKS
 from cpl.model.slot_cache import build_slot_model
-from cpl.train_hits import base_rate_baseline, evaluate, iterate, load_streams
+from cpl.observed import ObservedChooser
+from cpl.train_hits import base_rate_baseline, batch_sets, data_geometry, evaluate, load_streams
 from cpl.utils.seed import set_seed
 
 N = NUM_BLOCKS
@@ -55,42 +63,53 @@ def next_access(A: np.ndarray, L: np.ndarray) -> np.ndarray:
 
 
 def iterate_with_victims(data, bs, rng, with_victims):
-    """Like cpl.train_hits.iterate (shuffled), also yielding true victim ways when asked."""
+    """Like cpl.train_hits.iterate (shuffled), also yielding true victim ways when asked
+    and the set tensors (``kw``, empty for single-set data)."""
     idx = rng.permutation(len(data["lens"]))
     for s in range(0, len(idx), bs):
         j = idx[s : s + bs]
         T = int(data["lens"][j].max())
         F = data["F"][j, :T] if with_victims else None
         yield (torch.from_numpy(data["A"][j, :T]), torch.from_numpy(data["P"][j, :T]),
-               torch.from_numpy(data["M"][j, :T]), F)
+               torch.from_numpy(data["M"][j, :T]), F, batch_sets(data, j, T))
 
 
 class HindsightChooser:
-    """Per-batch victim chooser + partial-label loss, called by the model each step."""
+    """Per-batch victim chooser + partial-label loss, called by the model each step.
 
-    def __init__(self, A, P, M, explore: float, conf_weight: bool):
+    All constraints are PER SET (spec §5): a line's next access is in its own set (line
+    ids are unique per set), and the deadline check counts only misses in that set."""
+
+    def __init__(self, A, P, M, explore: float, conf_weight: bool, Sl=None, n_blocks: int = N,
+                 own_choice: bool = False):
+        self.own_choice = own_choice          # --observed-train: residency follows the model's choice
         self.A = A.numpy(); self.M = M.numpy() > 0
+        self.N = n_blocks
         self.lab = P.numpy() > 0.5                                    # majority label
         self.conf = np.abs(2 * P.numpy() - 1) if conf_weight else np.ones_like(self.lab, float)
         self.L = self.M.sum(1)
         self.nxt = next_access(self.A, self.L)
+        self.Sl = np.zeros(self.A.shape, np.int64) if Sl is None else Sl.numpy()
         miss = (~self.lab) & self.M
-        self.cm = np.cumsum(miss, 1)                                  # misses in [0, t]
+        S = int(self.Sl.max()) + 1
+        # cm[i, j, t] = misses in set slot j during [0, t]
+        self.cm = np.stack([np.cumsum(miss & (self.Sl == j), 1) for j in range(S)], 1)
         B = self.A.shape[0]
-        self.last = np.full((B, N + 1), -1, np.int64)                 # last access time per line
+        self.last = np.full((B, self.N + 1), -1, np.int64)            # last access time per line
         self.explore = explore
         self.losses, self.n_dec = [], 0
         self.n_incons = 0
 
-    def _misses_between(self, i, t, d):                               # misses in (t, d)
-        return int(self.cm[i, d - 1] - self.cm[i, t]) if d - 1 > t else 0
+    def _misses_between(self, i, j, t, d):                            # misses in set j during (t, d)
+        return int(self.cm[i, j, d - 1] - self.cm[i, j, t]) if d - 1 > t else 0
 
     def _allowed(self, i, t, lines):
         W = len(lines)
+        j = int(self.Sl[i, t])
         free, must = [], []                                           # must: (deadline, way)
         for w in range(W):
             x = int(lines[w])
-            if x == N or self.last[i, x] < 0:
+            if x == self.N or self.last[i, x] < 0:
                 free.append(w); continue
             d = int(self.nxt[i, self.last[i, x]])
             if d >= FAR or d >= self.L[i]:
@@ -101,7 +120,7 @@ class HindsightChooser:
         must.sort()
 
         def feasible(ms):
-            return all(k + 1 <= self._misses_between(i, t, d) for k, (d, _) in enumerate(ms))
+            return all(k + 1 <= self._misses_between(i, j, t, d) for k, (d, _) in enumerate(ms))
 
         if feasible(must):
             return free + [w for _, w in must]
@@ -125,13 +144,15 @@ class HindsightChooser:
                     ph[i] = 1.0                                       # consistent hit
                 else:                                                 # label hit, model says absent
                     self.n_incons += 1
-                    w = int(np.argmax(sc[i])); v[i, w] = 1.0
+                    empty = np.nonzero(lines[i] == self.N)[0]
+                    w = int(empty[0]) if (self.own_choice and len(empty)) else int(np.argmax(sc[i]))
+                    v[i, w] = 1.0
             else:
                 if len(where):                                        # label miss, model says present
                     self.n_incons += 1
                     v[i, int(where[0])] = 1.0                         # re-fetch into the same way
-                elif (lines[i] == N).any():                           # fill-order naming
-                    w = int(np.nonzero(lines[i] == N)[0][0])
+                elif (lines[i] == self.N).any():                      # fill-order naming
+                    w = int(np.nonzero(lines[i] == self.N)[0][0])
                     if w not in self._allowed(i, t, lines[i]):
                         self.n_incons += 1
                     v[i, w] = 1.0
@@ -142,7 +163,11 @@ class HindsightChooser:
                         al = list(range(W))
                     elif len(al) < W:
                         allowed[i, al] = True; use[i] = self.conf[i, t]
-                    w = al[int(np.argmax(sc[i, al]))]; v[i, w] = 1.0
+                    if self.own_choice:                               # loss from hindsight, choice from the model
+                        w = int(np.argmax(sc[i]))
+                    else:
+                        w = al[int(np.argmax(sc[i, al]))]
+                    v[i, w] = 1.0
             self.last[i, b] = t
         if use.any():
             al = torch.from_numpy(allowed).to(score.device)
@@ -159,8 +184,8 @@ class VictimLabelChooser:
     history exactly (fill-order naming makes model ways = simulator ways). Loss:
     cross-entropy of the score over ways against the true way."""
 
-    def __init__(self, P, M, F):
-        self.lab = P.numpy() > 0.5; self.M = M.numpy() > 0; self.F = F
+    def __init__(self, P, M, F, n_blocks: int = N):
+        self.lab = P.numpy() > 0.5; self.M = M.numpy() > 0; self.F = F; self.N = n_blocks
         self.losses, self.n_dec, self.n_incons = [], 0, 0
 
     def __call__(self, t, way_lines, score):
@@ -175,8 +200,8 @@ class VictimLabelChooser:
                 ph[i] = 1.0
                 continue
             w = int(self.F[i, t])
-            if (lines[i] == N).any():                     # empty fill: not a decision
-                if w != int(np.nonzero(lines[i] == N)[0][0]):
+            if (lines[i] == self.N).any():                # empty fill: not a decision
+                if w != int(np.nonzero(lines[i] == self.N)[0][0]):
                     self.n_incons += 1
             else:
                 tgt[i] = w
@@ -203,6 +228,20 @@ def load_filled_way(data_dir, split):
     return F
 
 
+@torch.no_grad()
+def evaluate_observed(model, data, bs=1024):
+    """Val/test accuracy under the observed-outcome protocol (cpl.observed)."""
+    from cpl.train_hits import iterate
+    model.eval()
+    correct = tot = 0.0
+    for A, P, M, kw in iterate(data, bs, False, None):
+        ch = ObservedChooser(A.numpy(), P.numpy() > 0.5, M.numpy() > 0, model.N)
+        logits = model(A, chooser=ch, **kw)
+        correct += float((((logits > 0) == (P > 0.5)) * (M > 0)).sum()); tot += float(M.sum())
+    model.train()
+    return {"acc": correct / max(tot, 1), "n_access": int(tot)}
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--data-dir", required=True)
@@ -219,6 +258,13 @@ def main(argv=None):
     ap.add_argument("--use-ages", action="store_true", help="give the model per-way line ages (recency/insertion ranks)")
     ap.add_argument("--victim-labels", action="store_true",
                     help="CAPACITY TEST, simulated data only: supervise with the true victims instead of hindsight")
+    ap.add_argument("--no-set-id", action="store_true",
+                    help="ABLATION (multi-set data): withhold the set identity e(a) from the model")
+    ap.add_argument("--no-global", action="store_true", help="ABLATION: no global state g (it stays 0)")
+    ap.add_argument("--d-set", type=int, default=16, help="size of the set identity e(a)")
+    ap.add_argument("--observed-train", action="store_true",
+                    help="train and select under the observed-outcome protocol (own victim choices + corrections)")
+    ap.add_argument("--init-from", default=None, help="start from this checkpoint (same geometry)")
     ap.add_argument("--max-train", type=int, default=0)
     ap.add_argument("--seed", type=int, default=1234)
     args = ap.parse_args(argv)
@@ -226,7 +272,12 @@ def main(argv=None):
     set_seed(args.seed); np.random.seed(args.seed)
     rng = np.random.default_rng(args.seed)
     run_dir = Path(args.run_dir); run_dir.mkdir(parents=True, exist_ok=True)
-    train = load_streams(args.data_dir, "train"); val = load_streams(args.data_dir, "val")
+    geo = data_geometry(args.data_dir)
+    args.num_blocks, args.s_max = geo["num_blocks"], geo["s_max"]
+    args.n_set_ids = 0 if args.no_set_id else geo["n_set_ids"]
+    args.use_global = not args.no_global
+    train = load_streams(args.data_dir, "train", args.num_blocks)
+    val = load_streams(args.data_dir, "val", args.num_blocks)
     if args.max_train and len(train["lens"]) > args.max_train:
         train = {k: v[: args.max_train] for k, v in train.items()}
     if args.victim_labels:
@@ -234,21 +285,31 @@ def main(argv=None):
         if args.max_train:
             train["F"] = train["F"][: args.max_train]
         assert train["F"].shape[0] == len(train["lens"])
-    model = build_slot_model({"d_way": args.d_way, "d_glob": args.d_glob, "use_ages": args.use_ages})
+    model = build_slot_model({"d_way": args.d_way, "d_glob": args.d_glob, "use_ages": args.use_ages,
+                              "num_blocks": args.num_blocks, "sets": args.s_max, "n_set_ids": args.n_set_ids,
+                              "d_set": args.d_set, "use_global": args.use_global})
+    if args.init_from:
+        model.load_state_dict(torch.load(args.init_from, map_location="cpu", weights_only=False)["model"])
     opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.01)
     n_params = sum(p.numel() for p in model.parameters())
     print(f"[hindsight] params={n_params:,} train_streams={len(train['lens']):,} "
-          f"train_access={int(train['M'].sum()):,}", flush=True)
+          f"train_access={int(train['M'].sum()):,} sets/stream<={args.s_max} "
+          f"set_id={'e(a) over ' + str(args.n_set_ids) + ' sets' if args.n_set_ids else 'none'} "
+          f"global={'on' if args.use_global else 'OFF'}"
+          + (f" observed-train init={args.init_from}" if args.observed_train else ""), flush=True)
 
     best = {"acc": -1.0}
     for ep in range(args.epochs):
         t0 = time.time()
         explore = args.explore * max(0.0, 1 - ep / max(args.epochs - 1, 1))
         incons = decs = 0; tot = 0.0
-        for A, P, M, F in iterate_with_victims(train, args.batch_size, rng, args.victim_labels):
-            ch = (VictimLabelChooser(P, M, F) if args.victim_labels
-                  else HindsightChooser(A, P, M, explore, args.conf_weight))
-            model(A, chooser=ch)
+        for A, P, M, F, kw in iterate_with_victims(train, args.batch_size, rng, args.victim_labels):
+            ch = (VictimLabelChooser(P, M, F, args.num_blocks) if args.victim_labels
+                  else HindsightChooser(A, P, M, explore, args.conf_weight, kw.get("sets"), args.num_blocks,
+                                        own_choice=args.observed_train))
+            if not args.n_set_ids:
+                kw.pop("set_ids", None)
+            model(A, chooser=ch, **kw)
             if not ch.losses:
                 continue
             loss = torch.stack(ch.losses).sum() / max(ch.n_dec, 1)
@@ -256,8 +317,13 @@ def main(argv=None):
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0); opt.step()
             incons += ch.n_incons; decs += ch.n_dec; tot += float(loss) * ch.n_dec
         ev = evaluate(model, val, "cpu")                              # free-running, no labels
+        obs_txt = ""
+        if args.observed_train:                                       # select on observed-outcome val
+            ev = {**evaluate_observed(model, val), "free_running_acc": ev["acc"]}
+            obs_txt = f" val_acc(observed)={ev['acc']:.4f}"
         print(f"[ep {ep:>2}] explore={explore:.2f} loss={tot / max(decs, 1):.4f} "
-              f"inconsistent_steps={incons} val_acc(free-running)={ev['acc']:.4f} "
+              f"{'corrections' if args.observed_train else 'inconsistent_steps'}={incons} "
+              f"val_acc(free-running)={ev.get('free_running_acc', ev['acc']):.4f}{obs_txt} "
               f"({time.time() - t0:.0f}s)", flush=True)
         if ev["acc"] > best["acc"]:
             best = ev
@@ -266,8 +332,11 @@ def main(argv=None):
     summary = {"params": n_params, "best_val": best, "base_rate_val": base_rate_baseline(train, val)}
     if args.test_dir:
         model.load_state_dict(torch.load(run_dir / "best.pt", map_location="cpu")["model"])
-        test = load_streams(args.test_dir, None)
+        test = load_streams(args.test_dir, None, args.num_blocks)
         summary["independent_test"] = evaluate(model, test, "cpu")
+        if args.observed_train:
+            summary["independent_test_observed"] = evaluate_observed(model, test)
+            print(f"[TEST on fresh set, observed outcomes] acc={summary['independent_test_observed']['acc']:.4f}", flush=True)
         summary["base_rate_test"] = base_rate_baseline(train, test)
         print(f"[TEST on fresh set] acc={summary['independent_test']['acc']:.4f} "
               f"(base-rate acc={summary['base_rate_test']['acc']:.4f})", flush=True)
