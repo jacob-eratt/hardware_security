@@ -1,0 +1,89 @@
+{
+  "test_dir": "../hardware_security_project/data/processed/sim_drrip_ms_test",
+  "split": null,
+  "observed": false,
+  "meta": {
+    "generator": "cpl.data.sim_multiset_dataset",
+    "code_version": "0.1.0",
+    "created_utc": "2026-11-25T20:19:08+00:00",
+    "source": "sim",
+    "policy": "drrip",
+    "S": 1024,
+    "W": 16,
+    "pool": 24,
+    "n": 8000,
+    "sets_range": [
+      1,
+      4
+    ],
+    "len_range_per_set": [
+      32,
+      96
+    ],
+    "seed": 2,
+    "all_test": true,
+    "start_state": "empty",
+    "state_dim": 16,
+    "max_line_id": 95,
+    "splits": {
+      "test": 8000
+    },
+    "overall_hit_rate": 0.5487,
+    "access_share_by_role": {
+      "follower": 0.9385,
+      "srrip_leader": 0.0314,
+      "brrip_leader": 0.0302
+    },
+    "seconds": 17.15,
+    "drrip": {
+      "n_leaders": 32,
+      "psel_bits": 10,
+      "psel_init": "uniform",
+      "bimodal": "counter",
+      "leader_rule": "complement select",
+      "psel_rule": "SRRIP-leader miss +1, BRRIP-leader miss -1, followers BRRIP iff PSEL >= 2**(bits-1)"
+    }
+  },
+  "results": {
+    "LRU": {
+      "acc_all": 0.8917186333477245,
+      "acc_non_first": 0.8354552850631256,
+      "acc_rd_0_7": 0.9366268429079817,
+      "acc_rd_8_15": 0.8557556139995954,
+      "acc_rd_16_plus": 0.5051067913879299,
+      "exact_stream": 0.045,
+      "contents_acc": 0.5257217536865041,
+      "contents_exact_stream": 0.015875
+    },
+    "FIFO": {
+      "acc_all": 0.8528297357998869,
+      "acc_non_first": 0.7763595905862792,
+      "acc_rd_0_7": 0.9079283172343671,
+      "acc_rd_8_15": 0.7406337003747483,
+      "acc_rd_16_plus": 0.4853242418599321,
+      "exact_stream": 0.022375,
+      "contents_acc": 0.4501306895138225,
+      "contents_exact_stream": 0.00425
+    },
+    "random replacement": {
+      "acc_all": 0.8552323343157777,
+      "acc_non_first": 0.7800105870608117,
+      "acc_rd_0_7": 0.902819013726487,
+      "acc_rd_8_15": 0.7490449323344327,
+      "acc_rd_16_plus": 0.5030416326452655,
+      "exact_stream": 0.018875,
+      "contents_acc": 0.4316640092352884,
+      "contents_exact_stream": 0.00375
+    },
+    "three-unit model": {
+      "acc_all": 0.9353877901548792,
+      "acc_non_first": 0.9018150769693531,
+      "acc_rd_0_7": 0.9358261311642094,
+      "acc_rd_8_15": 0.9168810149995665,
+      "acc_rd_16_plus": 0.7723789196235442,
+      "exact_stream": 0.1815,
+      "contents_acc": 0.6585340953900969,
+      "contents_exact_stream": 0.100625
+    }
+  }
+}
